@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>lk editor test</title>
+  <link rel="stylesheet" href="/assets/editor.css" />
+  <script type="module" src="/assets/editor.js"></script>
+  <style>
+    body { font-family: system-ui; background: #17141f; color: #eee; padding: 16px; }
+    button { padding: 10px 14px; font-size: 14px; margin: 4px; cursor: pointer; }
+    #out { margin-top: 14px; }
+    #out img { max-width: 320px; border-radius: 10px; display: block; margin-top: 8px; }
+    pre { background: #000; padding: 8px; border-radius: 8px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h3>Editor test page</h3>
+  <button id="viaInput">Mở editor qua input (test interceptor)</button>
+  <button id="direct">Mở editor trực tiếp</button>
+  <div id="out"><pre id="log">chưa có kết quả</pre></div>
+
+  <script>
+    const log = (m) => { document.getElementById("log").textContent = m; };
+
+    function makeTestImage() {
+      const c = document.createElement("canvas");
+      c.width = 1200; c.height = 900;
+      const x = c.getContext("2d");
+      const g = x.createLinearGradient(0, 0, 1200, 900);
+      g.addColorStop(0, "#5b8cff"); g.addColorStop(0.5, "#a86bff"); g.addColorStop(1, "#ff6bb5");
+      x.fillStyle = g; x.fillRect(0, 0, 1200, 900);
+      x.fillStyle = "rgba(255,255,255,.85)";
+      x.beginPath(); x.arc(300, 640, 150, 0, 7); x.fill();
+      x.fillStyle = "#221a33"; x.font = "bold 90px sans-serif";
+      x.fillText("TEST ẢNH 1200x900", 160, 300);
+      return new Promise((res) => c.toBlob((b) => res(new File([b], "test-anh.jpg", { type: "image/jpeg" })), "image/jpeg", 0.9));
+    }
+
+    function showResult(tag, file) {
+      log(tag + " → name=" + file.name + " size=" + file.size + " type=" + file.type);
+      const old = document.querySelector("#out img"); if (old) old.remove();
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      document.getElementById("out").appendChild(img);
+    }
+
+    document.getElementById("direct").addEventListener("click", async () => {
+      const f = await makeTestImage();
+      window.lkEditor.open(f, {
+        onDone: (b, n) => showResult("ON_DONE", new File([b], n, { type: b.type })),
+        onOriginal: () => log("ON_ORIGINAL (ảnh gốc giữ nguyên)"),
+        onCancel: () => log("ON_CANCEL"),
+      });
+    });
+
+    document.getElementById("viaInput").addEventListener("click", async () => {
+      const f = await makeTestImage();
+      const inp = document.createElement("input");
+      inp.type = "file";
+      inp.accept = ".jpg,.jpeg,.png";
+      inp.style.display = "none";
+      inp.addEventListener("change", () => {
+        const got = inp.files && inp.files[0];
+        if (got) showResult("INPUT_CHANGE (đã bơm lại)", got);
+        else log("INPUT_CHANGE nhưng không có file");
+      });
+      document.body.appendChild(inp);
+      const dt = new DataTransfer();
+      dt.items.add(f);
+      inp.files = dt.files;
+      inp.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  </script>
+</body>
+</html>

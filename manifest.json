@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "loocket",
+  "version": "2.3.0",
+  "description": "Xem và đăng khoảnh khắc Locket ngay trên trình duyệt máy tính.",
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "loocket",
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "32": "assets/icon32.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icon16.png",
+    "32": "assets/icon32.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  },
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "downloads",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://firebasestorage.googleapis.com/*",
+    "https://firestore.googleapis.com/*",
+    "https://securetoken.googleapis.com/*",
+    "https://www.googleapis.com/*",
+    "https://api.locketcamera.com/*",
+    "https://cdn.locketcamera.com/*"
+  ],
+  "background": {
+    "service_worker": "service-worker-loader.js",
+    "type": "module"
+  },
+  "homepage_url": "https://github.com/darwnlinz1/loocket"
+}

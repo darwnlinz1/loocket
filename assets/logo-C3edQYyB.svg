@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+    <defs>
+        <linearGradient id="loocket-mark" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#e888b6" />
+            <stop offset="100%" stop-color="#a83566" />
+        </linearGradient>
+    </defs>
+    <rect width="40" height="40" rx="9" ry="9" fill="url(#loocket-mark)" />
+    <circle cx="14.6" cy="20" r="5.9" fill="#fff" fill-opacity="0.95" />
+    <circle cx="25.4" cy="20" r="4.9" fill="none" stroke="#fff" stroke-opacity="0.95" stroke-width="2.9" />
+</svg>
