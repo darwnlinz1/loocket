@@ -549,7 +549,7 @@ export function createChatComponent({ React, jsx, looketService }) {
                   viewBox: '0 0 24 24',
                   fill: 'none',
                   stroke: 'currentColor',
-                  strokeWidth: '2.5',
+                  strokeWidth: '2.2',
                   strokeLinecap: 'round',
                   strokeLinejoin: 'round',
                   children: J.jsx('polyline', { points: '15 18 9 12 15 6' })
@@ -620,8 +620,8 @@ export function createChatComponent({ React, jsx, looketService }) {
                     J.jsx('div', {
                       className: 'lk-chat-empty-icon',
                       children: J.jsx('svg', {
-                        width: '36',
-                        height: '36',
+                        width: '40',
+                        height: '40',
                         viewBox: '0 0 24 24',
                         fill: 'none',
                         stroke: 'var(--brand-400)',
@@ -629,10 +629,12 @@ export function createChatComponent({ React, jsx, looketService }) {
                         strokeLinecap: 'round',
                         strokeLinejoin: 'round',
                         children: [
-                          J.jsx('path', { d: 'M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v5' }),
-                          J.jsx('path', { d: 'M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8' }),
-                          J.jsx('path', { d: 'M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8' }),
-                          J.jsx('path', { d: 'M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15' }),
+                          J.jsx('path', {
+                            d: 'M12 21a9.96 9.96 0 0 1-5.32-1.52L2.5 20.8a.75.75 0 0 1-.95-.95l1.32-4.18A9.96 9.96 0 0 1 2 11C2 5.48 6.48 1 12 1s10 4.48 10 10-4.48 10-10 10z'
+                          }),
+                          J.jsx('circle', { cx: '8', cy: '11', r: '1', fill: 'var(--brand-400)' }),
+                          J.jsx('circle', { cx: '12', cy: '11', r: '1', fill: 'var(--brand-400)' }),
+                          J.jsx('circle', { cx: '16', cy: '11', r: '1', fill: 'var(--brand-400)' }),
                         ],
                       }),
                     }),
@@ -749,7 +751,7 @@ export function createChatComponent({ React, jsx, looketService }) {
                     viewBox: '0 0 24 24',
                     fill: 'none',
                     stroke: 'currentColor',
-                    strokeWidth: '2.5',
+                    strokeWidth: '2',
                     strokeLinecap: 'round',
                     strokeLinejoin: 'round',
                     children: [
@@ -788,17 +790,18 @@ export function createChatComponent({ React, jsx, looketService }) {
                 children: sending
                   ? J.jsx('span', { style: { fontSize: '12px' }, children: '…' })
                   : J.jsx('svg', {
-                      width: '16',
-                      height: '16',
+                      width: '18',
+                      height: '18',
                       viewBox: '0 0 24 24',
                       fill: 'none',
                       stroke: 'currentColor',
-                      strokeWidth: '2.5',
+                      strokeWidth: '2.2',
                       strokeLinecap: 'round',
                       strokeLinejoin: 'round',
                       children: [
-                        J.jsx('line', { x1: '22', y1: '2', x2: '11', y2: '13' }),
-                        J.jsx('polygon', { points: '22 2 15 22 11 13 2 9 22 2' })
+                        J.jsx('circle', { cx: '12', cy: '12', r: '9.5' }),
+                        J.jsx('polyline', { points: '8 12 12 8 16 12' }),
+                        J.jsx('line', { x1: '12', y1: '16', x2: '12', y2: '8' }),
                       ]
                     })
               })
@@ -937,11 +940,16 @@ export function createChatComponent({ React, jsx, looketService }) {
                       viewBox: '0 0 24 24',
                       fill: 'none',
                       stroke: 'var(--brand-400)',
-                      strokeWidth: '1.6',
+                      strokeWidth: '1.8',
                       strokeLinecap: 'round',
                       strokeLinejoin: 'round',
                       children: [
-                        J.jsx('path', { d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' }),
+                        J.jsx('path', {
+                          d: 'M12 21a9.96 9.96 0 0 1-5.32-1.52L2.5 20.8a.75.75 0 0 1-.95-.95l1.32-4.18A9.96 9.96 0 0 1 2 11C2 5.48 6.48 1 12 1s10 4.48 10 10-4.48 10-10 10z'
+                        }),
+                        J.jsx('circle', { cx: '8', cy: '11', r: '1', fill: 'var(--brand-400)' }),
+                        J.jsx('circle', { cx: '12', cy: '11', r: '1', fill: 'var(--brand-400)' }),
+                        J.jsx('circle', { cx: '16', cy: '11', r: '1', fill: 'var(--brand-400)' }),
                       ],
                     }),
                   }),
@@ -1034,13 +1042,13 @@ export function createChatIcon(jsx) {
       viewBox: '0 0 24 24',
       fill: 'none',
       stroke: 'currentColor',
-      strokeWidth: '2',
+      strokeWidth: '1.8',
       strokeLinecap: 'round',
       strokeLinejoin: 'round',
       ...props,
       children: [
         jsx.jsx('path', {
-          d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'
+          d: 'M12 21a9.96 9.96 0 0 1-5.32-1.52L2.5 20.8a.75.75 0 0 1-.95-.95l1.32-4.18A9.96 9.96 0 0 1 2 11C2 5.48 6.48 1 12 1s10 4.48 10 10-4.48 10-10 10z'
         })
       ]
     });

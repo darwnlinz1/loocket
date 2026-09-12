@@ -9130,13 +9130,13 @@ function ye(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
-      { tag: "path", attr: { d: "m5 12 7-7 7 7" }, child: [] },
-      { tag: "path", attr: { d: "M12 19V5" }, child: [] },
+      { tag: "line", attr: { x1: "12", y1: "19", x2: "12", y2: "5" }, child: [] },
+      { tag: "polyline", attr: { points: "5 12 12 5 19 12" }, child: [] },
     ],
   })(e);
 }
@@ -9147,17 +9147,17 @@ function be(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
       {
         tag: "path",
-        attr: { d: "M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" },
+        attr: { d: "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" },
         child: [],
       },
-      { tag: "path", attr: { d: "M10.3 21a1.94 1.94 0 0 0 3.4 0" }, child: [] },
+      { tag: "path", attr: { d: "M13.73 21a2 2 0 0 1-3.46 0" }, child: [] },
     ],
   })(e);
 }
@@ -9168,11 +9168,11 @@ function ke(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "2.2",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
-    child: [{ tag: "path", attr: { d: "M20 6 9 17l-5-5" }, child: [] }],
+    child: [{ tag: "polyline", attr: { points: "20 6 9 17 4 12" }, child: [] }],
   })(e);
 }
 function xe(e) {
@@ -9182,11 +9182,11 @@ function xe(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "2.2",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
-    child: [{ tag: "path", attr: { d: "m6 9 6 6 6-6" }, child: [] }],
+    child: [{ tag: "polyline", attr: { points: "6 9 12 15 18 9" }, child: [] }],
   })(e);
 }
 function we(e) {
@@ -9196,11 +9196,11 @@ function we(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "2.2",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
-    child: [{ tag: "path", attr: { d: "m15 18-6-6 6-6" }, child: [] }],
+    child: [{ tag: "polyline", attr: { points: "15 18 9 12 15 6" }, child: [] }],
   })(e);
 }
 function _e(e) {
@@ -9210,11 +9210,11 @@ function _e(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "2.2",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
-    child: [{ tag: "path", attr: { d: "m18 15-6-6-6 6" }, child: [] }],
+    child: [{ tag: "polyline", attr: { points: "18 15 12 9 6 15" }, child: [] }],
   })(e);
 }
 function Se(e) {
@@ -9224,19 +9224,19 @@ function Se(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
       {
         tag: "rect",
-        attr: { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2" },
+        attr: { width: "13", height: "13", x: "8", y: "8", rx: "2.5" },
         child: [],
       },
       {
         tag: "path",
-        attr: { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" },
+        attr: { d: "M4 16c-1.1 0-2-.9-2-2V5a2 2 0 0 1 2-2h9c1.1 0 2 .9 2 2" },
         child: [],
       },
     ],
@@ -9249,20 +9249,20 @@ function Ce(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
       {
         tag: "path",
-        attr: { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" },
+        attr: { d: "M21 15v3.5a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5V15" },
         child: [],
       },
       { tag: "polyline", attr: { points: "7 10 12 15 17 10" }, child: [] },
       {
         tag: "line",
-        attr: { x1: "12", x2: "12", y1: "15", y2: "3" },
+        attr: { x1: "12", x2: "12", y1: "3", y2: "15" },
         child: [],
       },
     ],
@@ -9275,7 +9275,7 @@ function je(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
@@ -9287,27 +9287,17 @@ function je(e) {
       },
       {
         tag: "path",
-        attr: { d: "M10.41 10.41a2 2 0 1 1-2.83-2.83" },
-        child: [],
-      },
-      {
-        tag: "line",
-        attr: { x1: "13.5", x2: "6", y1: "13.5", y2: "21" },
-        child: [],
-      },
-      {
-        tag: "line",
-        attr: { x1: "18", x2: "21", y1: "12", y2: "15" },
+        attr: { d: "M10.4 10.4a2 2 0 1 1-2.8-2.8" },
         child: [],
       },
       {
         tag: "path",
         attr: {
-          d: "M3.59 3.59A1.99 1.99 0 0 0 3 5v14a2 2 0 0 0 2 2h14c.55 0 1.052-.22 1.41-.59",
+          d: "M3.5 3.5A2.5 2.5 0 0 0 3 5.5v13A2.5 2.5 0 0 0 5.5 21h13a2.5 2.5 0 0 0 2-.9",
         },
         child: [],
       },
-      { tag: "path", attr: { d: "M21 15V5a2 2 0 0 0-2-2H9" }, child: [] },
+      { tag: "path", attr: { d: "M21 15.5V5.5A2.5 2.5 0 0 0 18.5 3H8.5" }, child: [] },
     ],
   })(e);
 }
@@ -9318,26 +9308,26 @@ function Ne(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
-      { tag: "path", attr: { d: "M16 5h6" }, child: [] },
-      { tag: "path", attr: { d: "M19 2v6" }, child: [] },
       {
         tag: "path",
-        attr: {
-          d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5",
-        },
+        attr: { d: "M12 8v4l3 2" },
         child: [],
       },
       {
         tag: "path",
-        attr: { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" },
+        attr: { d: "M3.05 11a9 9 0 1 1 .5 4" },
         child: [],
       },
-      { tag: "circle", attr: { cx: "9", cy: "9", r: "2" }, child: [] },
+      {
+        tag: "polyline",
+        attr: { points: "3.05 4.5 3.05 11 9.55 11" },
+        child: [],
+      },
     ],
   })(e);
 }
@@ -9348,20 +9338,25 @@ function Ee(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
       {
         tag: "rect",
-        attr: { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2" },
+        attr: { width: "15", height: "13", x: "2", y: "7", rx: "3" },
         child: [],
       },
-      { tag: "circle", attr: { cx: "9", cy: "9", r: "2" }, child: [] },
       {
         tag: "path",
-        attr: { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" },
+        attr: { d: "M6 3.5A2.5 2.5 0 0 1 8.5 1h10A2.5 2.5 0 0 1 21 3.5v10a2.5 2.5 0 0 1-2.5 2.5" },
+        child: [],
+      },
+      { tag: "circle", attr: { cx: "6.5", cy: "11.5", r: "1.5" }, child: [] },
+      {
+        tag: "path",
+        attr: { d: "M2 17l4.5-4 3 2.5 3-3 4.5 4.5" },
         child: [],
       },
     ],
@@ -9374,14 +9369,14 @@ function Le(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
-      { tag: "circle", attr: { cx: "12", cy: "12", r: "10" }, child: [] },
-      { tag: "path", attr: { d: "M12 16v-4" }, child: [] },
-      { tag: "path", attr: { d: "M12 8h.01" }, child: [] },
+      { tag: "circle", attr: { cx: "12", cy: "12", r: "9.5" }, child: [] },
+      { tag: "line", attr: { x1: "12", y1: "16", x2: "12", y2: "11" }, child: [] },
+      { tag: "circle", attr: { cx: "12", cy: "8", r: "0.8", fill: "currentColor" }, child: [] },
     ],
   })(e);
 }
@@ -9392,29 +9387,29 @@ function Te(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
       {
         tag: "rect",
-        attr: { width: "7", height: "7", x: "3", y: "3", rx: "1" },
+        attr: { width: "7.5", height: "7.5", x: "3", y: "3", rx: "2.5" },
         child: [],
       },
       {
         tag: "rect",
-        attr: { width: "7", height: "7", x: "14", y: "3", rx: "1" },
+        attr: { width: "7.5", height: "7.5", x: "13.5", y: "3", rx: "2.5" },
         child: [],
       },
       {
         tag: "rect",
-        attr: { width: "7", height: "7", x: "14", y: "14", rx: "1" },
+        attr: { width: "7.5", height: "7.5", x: "13.5", y: "13.5", rx: "2.5" },
         child: [],
       },
       {
         tag: "rect",
-        attr: { width: "7", height: "7", x: "3", y: "14", rx: "1" },
+        attr: { width: "7.5", height: "7.5", x: "3", y: "13.5", rx: "2.5" },
         child: [],
       },
     ],
@@ -9427,14 +9422,14 @@ function Pe(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
       {
         tag: "path",
-        attr: { d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" },
+        attr: { d: "M10 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" },
         child: [],
       },
       { tag: "polyline", attr: { points: "16 17 21 12 16 7" }, child: [] },
@@ -9451,14 +9446,14 @@ function Re(e) {
     tag: "svg",
     attr: {
       viewBox: "0 0 24 24",
-      fill: "none",
+      fill: "currentColor",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
-      { tag: "polygon", attr: { points: "6 3 20 12 6 21 6 3" }, child: [] },
+      { tag: "path", attr: { d: "M6 4.5a1.5 1.5 0 0 1 2.3-1.3l12 7.5a1.5 1.5 0 0 1 0 2.6l-12 7.5A1.5 1.5 0 0 1 6 19.5v-15z" }, child: [] },
     ],
   })(e);
 }
@@ -9469,19 +9464,23 @@ function Me(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
-      { tag: "path", attr: { d: "M12 22v-5" }, child: [] },
-      { tag: "path", attr: { d: "M9 8V2" }, child: [] },
-      { tag: "path", attr: { d: "M15 8V2" }, child: [] },
       {
-        tag: "path",
-        attr: { d: "M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z" },
+        tag: "rect",
+        attr: { x: "9", y: "2", width: "6", height: "12", rx: "3" },
         child: [],
       },
+      {
+        tag: "path",
+        attr: { d: "M19 10v1a7 7 0 0 1-14 0v-1" },
+        child: [],
+      },
+      { tag: "line", attr: { x1: "12", y1: "18", x2: "12", y2: "22" }, child: [] },
+      { tag: "line", attr: { x1: "8", y1: "22", x2: "16", y2: "22" }, child: [] },
     ],
   })(e);
 }
@@ -9492,13 +9491,14 @@ function ze(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
-      { tag: "path", attr: { d: "M5 12h14" }, child: [] },
-      { tag: "path", attr: { d: "M12 5v14" }, child: [] },
+      { tag: "circle", attr: { cx: "12", cy: "12", r: "9.5" }, child: [] },
+      { tag: "line", attr: { x1: "12", y1: "7.5", x2: "12", y2: "16.5" }, child: [] },
+      { tag: "line", attr: { x1: "7.5", y1: "12", x2: "16.5", y2: "12" }, child: [] },
     ],
   })(e);
 }
@@ -9509,23 +9509,17 @@ function Oe(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
       {
         tag: "path",
-        attr: { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" },
+        attr: { d: "M21 12a9 9 0 1 1-2.64-6.36L21 8" },
         child: [],
       },
-      { tag: "path", attr: { d: "M21 3v5h-5" }, child: [] },
-      {
-        tag: "path",
-        attr: { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" },
-        child: [],
-      },
-      { tag: "path", attr: { d: "M8 16H3v5" }, child: [] },
+      { tag: "polyline", attr: { points: "21 3 21 8 16 8" }, child: [] },
     ],
   })(e);
 }
@@ -9536,19 +9530,14 @@ function Ie(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
-      {
-        tag: "path",
-        attr: {
-          d: "M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z",
-        },
-        child: [],
-      },
-      { tag: "path", attr: { d: "m21.854 2.147-10.94 10.939" }, child: [] },
+      { tag: "circle", attr: { cx: "12", cy: "12", r: "9.5" }, child: [] },
+      { tag: "polyline", attr: { points: "8 12 12 8 16 12" }, child: [] },
+      { tag: "line", attr: { x1: "12", y1: "16", x2: "12", y2: "8" }, child: [] },
     ],
   })(e);
 }
@@ -9559,19 +9548,23 @@ function Fe(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
       {
+        tag: "circle",
+        attr: { cx: "12", cy: "12", r: "3" },
+        child: [],
+      },
+      {
         tag: "path",
         attr: {
-          d: "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z",
+          d: "M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",
         },
         child: [],
       },
-      { tag: "circle", attr: { cx: "12", cy: "12", r: "3" }, child: [] },
     ],
   })(e);
 }
@@ -9582,7 +9575,7 @@ function De(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
@@ -9590,12 +9583,12 @@ function De(e) {
       { tag: "path", attr: { d: "M3 6h18" }, child: [] },
       {
         tag: "path",
-        attr: { d: "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" },
+        attr: { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" },
         child: [],
       },
       {
         tag: "path",
-        attr: { d: "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" },
+        attr: { d: "M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" },
         child: [],
       },
       {
@@ -9618,14 +9611,14 @@ function Ue(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
       {
         tag: "path",
-        attr: { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" },
+        attr: { d: "M21 15v3.5a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5V15" },
         child: [],
       },
       { tag: "polyline", attr: { points: "17 8 12 3 7 8" }, child: [] },
@@ -9644,19 +9637,27 @@ function Be(e) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: "2",
+      strokeWidth: "1.8",
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
     child: [
+      { tag: "circle", attr: { cx: "9", cy: "7", r: "3.5" }, child: [] },
       {
         tag: "path",
-        attr: { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" },
+        attr: { d: "M2.5 19a6.5 6.5 0 0 1 13 0" },
         child: [],
       },
-      { tag: "circle", attr: { cx: "9", cy: "7", r: "4" }, child: [] },
-      { tag: "path", attr: { d: "M22 21v-2a4 4 0 0 0-3-3.87" }, child: [] },
-      { tag: "path", attr: { d: "M16 3.13a4 4 0 0 1 0 7.75" }, child: [] },
+      {
+        tag: "path",
+        attr: { d: "M14.5 4.5a3.5 3.5 0 0 1 0 6" },
+        child: [],
+      },
+      {
+        tag: "path",
+        attr: { d: "M16 14.5a6.5 6.5 0 0 1 5.5 4.5" },
+        child: [],
+      },
     ],
   })(e);
 }
@@ -9672,8 +9673,8 @@ function Ae(e) {
       strokeLinejoin: "round",
     },
     child: [
-      { tag: "path", attr: { d: "M18 6 6 18" }, child: [] },
-      { tag: "path", attr: { d: "m6 6 12 12" }, child: [] },
+      { tag: "line", attr: { x1: "18", y1: "6", x2: "6", y2: "18" }, child: [] },
+      { tag: "line", attr: { x1: "6", y1: "6", x2: "18", y2: "18" }, child: [] },
     ],
   })(e);
 }
@@ -13052,11 +13053,11 @@ function Kr({
             viewBox: "0 0 24 24",
             fill: "none",
             stroke: "currentColor",
-            strokeWidth: "2",
+            strokeWidth: "1.8",
             strokeLinecap: "round",
             strokeLinejoin: "round",
             children: B.jsx("path", {
-              d: "M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z",
+              d: "M3 7v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6.5l-2-2H5a2 2 0 0 0-2 2z",
             }),
           }),
         }),
@@ -13084,14 +13085,14 @@ function Kr({
                 viewBox: "0 0 24 24",
                 fill: "none",
                 stroke: "currentColor",
-                strokeWidth: "2",
+                strokeWidth: "1.8",
                 strokeLinecap: "round",
                 strokeLinejoin: "round",
                 children: [
-                  B.jsx("rect", { x: "3", y: "3", width: "7", height: "7", rx: "2" }),
-                  B.jsx("rect", { x: "14", y: "3", width: "7", height: "7", rx: "2" }),
-                  B.jsx("rect", { x: "14", y: "14", width: "7", height: "7", rx: "2" }),
-                  B.jsx("rect", { x: "3", y: "14", width: "7", height: "7", rx: "2" }),
+                  B.jsx("rect", { x: "3", y: "3", width: "7.5", height: "7.5", rx: "2.5" }),
+                  B.jsx("rect", { x: "13.5", y: "3", width: "7.5", height: "7.5", rx: "2.5" }),
+                  B.jsx("rect", { x: "13.5", y: "13.5", width: "7.5", height: "7.5", rx: "2.5" }),
+                  B.jsx("rect", { x: "3", y: "13.5", width: "7.5", height: "7.5", rx: "2.5" }),
                 ],
               }),
               B.jsx("span", { className: "lk-filter-label", children: "Tất cả" }),
@@ -13123,12 +13124,13 @@ function Kr({
                     viewBox: "0 0 24 24",
                     fill: "none",
                     stroke: "currentColor",
-                    strokeWidth: "2",
+                    strokeWidth: "1.8",
                     strokeLinecap: "round",
                     strokeLinejoin: "round",
                     children: [
-                      B.jsx("path", { d: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" }),
-                      B.jsx("circle", { cx: "12", cy: "7", r: "4" }),
+                      B.jsx("circle", { cx: "12", cy: "12", r: "9.5" }),
+                      B.jsx("circle", { cx: "12", cy: "9", r: "3" }),
+                      B.jsx("path", { d: "M6.5 18a5.5 5.5 0 0 1 11 0" }),
                     ],
                   }),
               B.jsx("span", { className: "lk-filter-label", children: "Của tôi" }),
@@ -14022,10 +14024,13 @@ function Ea({
                         strokeLinecap: "round",
                         strokeLinejoin: "round",
                         children: [
-                          B.jsx("rect", { x: "3", y: "4", width: "18", height: "18", rx: "4", ry: "4" }),
-                          B.jsx("line", { x1: "16", y1: "2", x2: "16", y2: "6" }),
-                          B.jsx("line", { x1: "8", y1: "2", x2: "8", y2: "6" }),
-                          B.jsx("line", { x1: "3", y1: "10", x2: "21", y2: "10" }),
+                          B.jsx("rect", { x: "3", y: "4", width: "18", height: "17", rx: "3.5", ry: "3.5" }),
+                          B.jsx("line", { x1: "16", y1: "2", x2: "16", y2: "5" }),
+                          B.jsx("line", { x1: "8", y1: "2", x2: "8", y2: "5" }),
+                          B.jsx("line", { x1: "3", y1: "9", x2: "21", y2: "9" }),
+                          B.jsx("circle", { cx: "8", cy: "13", r: "1", fill: "currentColor" }),
+                          B.jsx("circle", { cx: "12", cy: "13", r: "1", fill: "currentColor" }),
+                          B.jsx("circle", { cx: "16", cy: "13", r: "1", fill: "currentColor" }),
                         ],
                       }),
                     }),
@@ -15410,14 +15415,17 @@ function DateRangeCleanerModal({
                   viewBox: "0 0 24 24",
                   fill: "none",
                   stroke: "#ffd700",
-                  strokeWidth: "2",
+                  strokeWidth: "1.8",
                   strokeLinecap: "round",
                   strokeLinejoin: "round",
                   children: [
-                    B.jsx("rect", { x: "3", y: "4", width: "18", height: "18", rx: "4", ry: "4" }),
-                    B.jsx("line", { x1: "16", y1: "2", x2: "16", y2: "6" }),
-                    B.jsx("line", { x1: "8", y1: "2", x2: "8", y2: "6" }),
-                    B.jsx("line", { x1: "3", y1: "10", x2: "21", y2: "10" }),
+                    B.jsx("rect", { x: "3", y: "4", width: "18", height: "17", rx: "3.5", ry: "3.5" }),
+                    B.jsx("line", { x1: "16", y1: "2", x2: "16", y2: "5" }),
+                    B.jsx("line", { x1: "8", y1: "2", x2: "8", y2: "5" }),
+                    B.jsx("line", { x1: "3", y1: "9", x2: "21", y2: "9" }),
+                    B.jsx("circle", { cx: "8", cy: "13", r: "1", fill: "currentColor" }),
+                    B.jsx("circle", { cx: "12", cy: "13", r: "1", fill: "currentColor" }),
+                    B.jsx("circle", { cx: "16", cy: "13", r: "1", fill: "currentColor" }),
                   ],
                 }),
                 B.jsx("span", { children: "Xóa ảnh theo khoảng thời gian" }),
@@ -15434,7 +15442,7 @@ function DateRangeCleanerModal({
                 viewBox: "0 0 24 24",
                 fill: "none",
                 stroke: "currentColor",
-                strokeWidth: "2.2",
+                strokeWidth: "2",
                 strokeLinecap: "round",
                 strokeLinejoin: "round",
                 children: [
@@ -15583,14 +15591,14 @@ function DateRangeCleanerModal({
                     viewBox: "0 0 24 24",
                     fill: "none",
                     stroke: "currentColor",
-                    strokeWidth: "2",
+                    strokeWidth: "1.8",
                     strokeLinecap: "round",
                     strokeLinejoin: "round",
                     style: { flex: "none", marginRight: "6px" },
                     children: [
-                      B.jsx("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }),
+                      B.jsx("path", { d: "M12 2.8c.6 0 1.2.3 1.5.9l8.6 15.2c.6 1.1-.2 2.5-1.5 2.5H3.4c-1.3 0-2.1-1.4-1.5-2.5L10.5 3.7c.3-.6.9-.9 1.5-.9z" }),
                       B.jsx("line", { x1: "12", y1: "9", x2: "12", y2: "13" }),
-                      B.jsx("line", { x1: "12", y1: "17", x2: "12.01", y2: "17" }),
+                      B.jsx("circle", { cx: "12", cy: "17", r: "0.8", fill: "currentColor" }),
                     ],
                   }),
                   B.jsx("span", { children: "Ngày bắt đầu đang lớn hơn ngày kết thúc. Vui lòng chọn lại khoảng thời gian." }),
@@ -15714,13 +15722,13 @@ function DateRangeCleanerModal({
                         viewBox: "0 0 24 24",
                         fill: "none",
                         stroke: "#e05a5a",
-                        strokeWidth: "2",
+                        strokeWidth: "1.8",
                         strokeLinecap: "round",
                         strokeLinejoin: "round",
                         children: [
-                          B.jsx("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }),
+                          B.jsx("path", { d: "M12 2.8c.6 0 1.2.3 1.5.9l8.6 15.2c.6 1.1-.2 2.5-1.5 2.5H3.4c-1.3 0-2.1-1.4-1.5-2.5L10.5 3.7c.3-.6.9-.9 1.5-.9z" }),
                           B.jsx("line", { x1: "12", y1: "9", x2: "12", y2: "13" }),
-                          B.jsx("line", { x1: "12", y1: "17", x2: "12.01", y2: "17" }),
+                          B.jsx("circle", { cx: "12", cy: "17", r: "0.8", fill: "currentColor" }),
                         ],
                       }),
                       B.jsxs("span", {
@@ -16004,15 +16012,15 @@ class LkErrorBoundary extends A.Component {
               viewBox: "0 0 24 24",
               fill: "none",
               stroke: "currentColor",
-              strokeWidth: "2",
+              strokeWidth: "1.8",
               strokeLinecap: "round",
               strokeLinejoin: "round",
               children: [
-                B.jsx("circle", { cx: "12", cy: "12", r: "10" }),
-                B.jsx("line", { x1: "12", y1: "8", x2: "12", y2: "12" }),
-                B.jsx("line", { x1: "12", y1: "16", x2: "12.01", y2: "16" })
-              ]
-            })
+                B.jsx("circle", { cx: "12", cy: "12", r: "9.5" }),
+                B.jsx("line", { x1: "12", y1: "8", x2: "12", y2: "13" }),
+                B.jsx("circle", { cx: "12", cy: "16", r: "0.8", fill: "currentColor" }),
+              ],
+            }),
           }),
           B.jsx("h2", {
             style: { fontSize: "17px", fontWeight: "700", marginBottom: "8px" },
