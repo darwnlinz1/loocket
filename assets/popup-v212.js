@@ -9678,8 +9678,26 @@ function Ae(e) {
   })(e);
 }
 const $e = function (e) {
+    let ms = e;
+    if (typeof ms === "number" && ms > 0 && ms < 1e11) ms = ms * 1000;
+    else if (typeof ms === "string") {
+      const num = Number(ms);
+      if (!isNaN(num) && ms.trim() !== "") {
+        ms = num < 1e11 ? num * 1000 : num;
+      } else {
+        const p = Date.parse(ms);
+        ms = isNaN(p) ? Date.now() : p;
+      }
+    } else if (typeof ms === "object" && ms !== null) {
+      if (typeof ms.toMillis === "function") ms = ms.toMillis();
+      else if (ms.timestampValue) ms = Date.parse(ms.timestampValue);
+      else {
+        ms = ms.timestampMs ?? ms.seconds ?? ms.timestamp ?? 0;
+        if (typeof ms === "number" && ms < 1e11) ms = ms * 1000;
+      }
+    }
     const t = ["y", "mo", "d", "h", "m", "s"],
-      n = Math.floor((new Date().valueOf() - new Date(e).valueOf()) / 1e3);
+      n = Math.max(0, Math.floor((new Date().valueOf() - new Date(ms || Date.now()).valueOf()) / 1e3));
     let r = n / 31536e3;
     return r > 1
       ? Math.floor(r) + t[0]
@@ -12542,7 +12560,25 @@ const jr = [
   "Thứ Bảy",
 ];
 function Nr(e) {
-  const t = new Date(e);
+  let ms = e;
+  if (typeof ms === "number" && ms > 0 && ms < 1e11) ms = ms * 1000;
+  else if (typeof ms === "string") {
+    const num = Number(ms);
+    if (!isNaN(num) && ms.trim() !== "") {
+      ms = num < 1e11 ? num * 1000 : num;
+    } else {
+      const p = Date.parse(ms);
+      ms = isNaN(p) ? Date.now() : p;
+    }
+  } else if (typeof ms === "object" && ms !== null) {
+    if (typeof ms.toMillis === "function") ms = ms.toMillis();
+    else if (ms.timestampValue) ms = Date.parse(ms.timestampValue);
+    else {
+      ms = ms.timestampMs ?? ms.seconds ?? ms.timestamp ?? 0;
+      if (typeof ms === "number" && ms < 1e11) ms = ms * 1000;
+    }
+  }
+  const t = new Date(ms || Date.now());
   return (t.setHours(0, 0, 0, 0), t.getTime());
 }
 function Er(e) {
@@ -12778,11 +12814,20 @@ function Kr({
   }, [lkFriends.length]);
 
   const filteredMoments = A.useMemo(() => {
-    if (!selectedFilter) return e;
-    if (selectedFilter === lkMyUid) {
-      return e.filter((m) => m.authorUid === lkMyUid || m.user?.uid === lkMyUid);
+    let list = e;
+    if (selectedFilter) {
+      if (selectedFilter === lkMyUid) {
+        list = e.filter((m) => m.authorUid === lkMyUid || m.user?.uid === lkMyUid);
+      } else {
+        list = e.filter((m) => m.authorUid === selectedFilter || m.user?.uid === selectedFilter);
+      }
     }
-    return e.filter((m) => m.authorUid === selectedFilter || m.user?.uid === selectedFilter);
+    // Sắp xếp giảm dần thời gian (ảnh mới nhất lên đầu, cũ nhất xuống cuối)
+    return [...list].sort((a, b) => {
+      const aTime = a?.timestampMs || (typeof a?.seconds === "number" ? (a.seconds < 1e11 ? a.seconds * 1000 : a.seconds) : (a?.timestamp ? (a.timestamp < 1e11 ? a.timestamp * 1000 : a.timestamp) : 0));
+      const bTime = b?.timestampMs || (typeof b?.seconds === "number" ? (b.seconds < 1e11 ? b.seconds * 1000 : b.seconds) : (b?.timestamp ? (b.timestamp < 1e11 ? b.timestamp * 1000 : b.timestamp) : 0));
+      return bTime - aTime;
+    });
   }, [e, selectedFilter, lkMyUid]);
 
   const momentIndexMap = A.useMemo(() => {
@@ -12816,14 +12861,94 @@ function Kr({
           }),
           n
         );
-      })(filteredMoments, (e) => e.seconds),
+      })(filteredMoments, (e) => e.timestampMs || e.seconds),
     [filteredMoments],
   );
 
+  const monthGroups = A.useMemo(() => {
+    const monthMap = new Map();
+
+    filteredMoments.forEach((item, r) => {
+      let ts = item.timestampMs || (typeof item.seconds === "number" ? (item.seconds < 1e11 ? item.seconds * 1000 : item.seconds) : (item.timestamp ? (item.timestamp < 1e11 ? item.timestamp * 1000 : item.timestamp) : 0));
+      if (!ts || isNaN(ts) || ts <= 0) {
+        if (item.date) {
+          const p = Date.parse(item.date);
+          if (!isNaN(p)) ts = p;
+        }
+      }
+      if (!ts || isNaN(ts) || ts <= 0) ts = Date.now();
+
+      const dateObj = new Date(ts);
+      const year = dateObj.getFullYear();
+      const month = dateObj.getMonth();
+      const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
+      const monthLabel = `Tháng ${month + 1}, ${year}`;
+
+      const dayKey = Nr(ts);
+      const dayLabel = Er(dayKey);
+
+      let curGroup = monthMap.get(monthKey);
+      if (!curGroup) {
+        curGroup = {
+          key: monthKey,
+          label: monthLabel,
+          year,
+          month,
+          timestamp: ts,
+          entries: [],
+          dayMap: new Map()
+        };
+        monthMap.set(monthKey, curGroup);
+      }
+
+      curGroup.entries.push({ item, index: r });
+
+      let curDay = curGroup.dayMap.get(dayKey);
+      if (!curDay) {
+        curDay = {
+          key: dayKey,
+          label: dayLabel,
+          timestamp: ts,
+          entries: []
+        };
+        curGroup.dayMap.set(dayKey, curDay);
+      }
+      curDay.entries.push({ item, index: r });
+    });
+
+    const groups = Array.from(monthMap.values()).map((g) => ({
+      key: g.key,
+      label: g.label,
+      year: g.year,
+      month: g.month,
+      entries: g.entries,
+      dayGroups: Array.from(g.dayMap.values()).sort((a, b) => b.key - a.key)
+    }));
+
+    // Sắp xếp các cụm tháng giảm dần theo thời gian (tháng mới nhất lên đầu)
+    groups.sort((a, b) => b.key.localeCompare(a.key));
+    return groups;
+  }, [filteredMoments]);
+
+  const [expandedMonths, setExpandedMonths] = A.useState(() => new Set());
+  const toggleMonth = A.useCallback((monthKey) => {
+    setExpandedMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(monthKey)) {
+        next.delete(monthKey);
+      } else {
+        next.add(monthKey);
+      }
+      return next;
+    });
+  }, []);
+
   const [renderedDaysCount, setRenderedDaysCount] = A.useState(15);
+  const [renderedMonthsCount, setRenderedMonthsCount] = A.useState(12);
 
   A.useEffect(() => {
     setRenderedDaysCount(15);
+    setRenderedMonthsCount(12);
   }, [selectedFilter]);
 
   const visibleDays = A.useMemo(
@@ -12831,20 +12956,26 @@ function Kr({
     [n, renderedDaysCount]
   );
 
+  const visibleMonths = A.useMemo(
+    () => monthGroups.slice(0, renderedMonthsCount),
+    [monthGroups, renderedMonthsCount]
+  );
+
   const lm = A.useCallback(
     (e) => {
       const t = e.currentTarget;
       const distFromBottom = t.scrollHeight - t.scrollTop - t.clientHeight;
 
-      // Progressive windowing expansion: load more days as user scrolls
+      // Progressive windowing expansion: load more months and days as user scrolls
       if (distFromBottom <= 700) {
         setRenderedDaysCount((prev) => (prev < n.length ? Math.min(n.length, prev + 15) : prev));
+        setRenderedMonthsCount((prev) => (prev < monthGroups.length ? Math.min(monthGroups.length, prev + 6) : prev));
       }
 
       if (nm || rm || !autoLoadDeepHistory) return;
       distFromBottom <= 360 && am && am(selectedFilter);
     },
-    [nm, rm, am, selectedFilter, autoLoadDeepHistory, n.length],
+    [nm, rm, am, selectedFilter, autoLoadDeepHistory, n.length, monthGroups.length],
   );
 
   const friendMomentCounts = A.useMemo(() => {
@@ -12872,7 +13003,7 @@ function Kr({
     if (!filteredMoments || filteredMoments.length === 0) return null;
     let minSec = Infinity;
     for (let i = 0; i < filteredMoments.length; i++) {
-      const s = filteredMoments[i]?.seconds || (filteredMoments[i]?.timestamp ? filteredMoments[i].timestamp / 1000 : 0);
+      const s = filteredMoments[i]?.timestampMs || (typeof filteredMoments[i]?.seconds === 'number' ? (filteredMoments[i].seconds < 1e11 ? filteredMoments[i].seconds * 1000 : filteredMoments[i].seconds) : (filteredMoments[i]?.timestamp ? (filteredMoments[i].timestamp < 1e11 ? filteredMoments[i].timestamp * 1000 : filteredMoments[i].timestamp) : 0));
       if (s > 0 && s < minSec) minSec = s;
     }
     if (minSec === Infinity) return null;
@@ -12885,14 +13016,14 @@ function Kr({
     if (filteredMoments.length === 0) return void 0;
     const fromStr = oldestMomentTimeStr ? ` · Từ ${oldestMomentTimeStr}` : "";
     if (selectedFilter === lkMyUid) {
-      return `${filteredMoments.length} khoảnh khắc của bạn · ${n.length} ngày đã đăng${fromStr}`;
+      return `${filteredMoments.length} khoảnh khắc của bạn · ${monthGroups.length} cụm tháng${fromStr}`;
     }
     if (currentFriend) {
       const name = currentFriend.displayName || currentFriend.username || "bạn bè";
-      return `${filteredMoments.length} khoảnh khắc của ${name} · ${n.length} ngày đã đăng${fromStr}`;
+      return `${filteredMoments.length} khoảnh khắc của ${name} · ${monthGroups.length} cụm tháng${fromStr}`;
     }
-    return `${filteredMoments.length} khoảnh khắc · ${n.length} ngày đã đăng${fromStr}`;
-  }, [filteredMoments.length, n.length, selectedFilter, lkMyUid, currentFriend, oldestMomentTimeStr]);
+    return `${filteredMoments.length} khoảnh khắc · ${monthGroups.length} cụm tháng${fromStr}`;
+  }, [filteredMoments.length, monthGroups.length, selectedFilter, lkMyUid, currentFriend, oldestMomentTimeStr]);
 
   return B.jsxs("div", {
     className: Ir,
@@ -13071,52 +13202,142 @@ function Kr({
             className: Fr,
             onScroll: lm,
             children: [
-              visibleDays.map((dayGroup) =>
-                B.jsxs(
+              visibleMonths.map((monthGroup) => {
+                const isExpanded = expandedMonths.has(monthGroup.key);
+                return B.jsxs(
                   "section",
                   {
-                    className: Dr,
+                    className: "lk-gallery-month-section",
                     children: [
-                      B.jsxs("h2", {
-                        className: oe(Ur, "lk-gallery-day-header"),
+                      B.jsxs("div", {
+                        className: `lk-gallery-month-header ${isExpanded ? "expanded" : ""}`,
+                        role: "button",
+                        tabIndex: 0,
+                        "aria-expanded": isExpanded,
+                        onClick: () => toggleMonth(monthGroup.key),
+                        onKeyDown: (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            toggleMonth(monthGroup.key);
+                          }
+                        },
+                        title: isExpanded ? "Thu gọn phân nhóm ngày" : "Nhấp để hiển thị chi tiết theo ngày",
                         children: [
-                          B.jsx("span", {
-                            className: "lk-gallery-day-title",
-                            children: dayGroup.label,
+                          B.jsxs("div", {
+                            className: "lk-gallery-month-title-wrap",
+                            children: [
+                              B.jsx("span", {
+                                className: "lk-gallery-month-title",
+                                children: monthGroup.label,
+                              }),
+                              B.jsx("span", {
+                                className: "lk-gallery-month-count",
+                                children: `${monthGroup.entries.length} ảnh`,
+                              }),
+                            ],
                           }),
-                          B.jsx("span", {
-                            className: oe(Br, "lk-gallery-day-count"),
-                            children: dayGroup.entries.length,
+                          B.jsxs("div", {
+                            className: `lk-gallery-month-expand-btn ${isExpanded ? "active" : ""}`,
+                            children: [
+                              B.jsx("span", {
+                                className: "lk-gallery-expand-text",
+                                children: isExpanded ? "Thu gọn ngày" : "Xem theo ngày",
+                              }),
+                              B.jsx("svg", {
+                                className: `lk-month-chevron ${isExpanded ? "rotate-180" : ""}`,
+                                width: "14",
+                                height: "14",
+                                viewBox: "0 0 24 24",
+                                fill: "none",
+                                stroke: "currentColor",
+                                strokeWidth: "2",
+                                strokeLinecap: "round",
+                                strokeLinejoin: "round",
+                                children: B.jsx("polyline", {
+                                  points: isExpanded ? "18 15 12 9 6 15" : "6 9 12 15 18 9",
+                                }),
+                              }),
+                            ],
                           }),
                         ],
                       }),
-                      B.jsx("div", {
-                        className: Ar,
-                        children: dayGroup.entries.map(({ item: item, index: subIdx }) => {
-                          const globalIdx =
-                            momentIndexMap.get(item.momentUid) ??
-                            momentIndexMap.get(item.canonical_uid) ??
-                            momentIndexMap.get(item.id) ??
-                            momentIndexMap.get(item.thumbnail_url) ??
-                            subIdx;
-                          const clickIdx = globalIdx >= 0 ? globalIdx : subIdx;
-                          return B.jsx(
-                            LazyPhotoCell,
-                            {
-                              item,
-                              subIdx,
-                              clickIdx,
-                              onOpen: t,
-                            },
-                            item.momentUid || item.canonical_uid || item.id || item.md5 || subIdx,
-                          );
-                        }),
-                      }),
+                      isExpanded
+                        ? B.jsx("div", {
+                            className: "lk-gallery-month-expanded-days",
+                            children: monthGroup.dayGroups.map((dayGroup) =>
+                              B.jsxs(
+                                "div",
+                                {
+                                  className: Dr,
+                                  children: [
+                                    B.jsxs("h3", {
+                                      className: oe(Ur, "lk-gallery-day-header"),
+                                      children: [
+                                        B.jsx("span", {
+                                          className: "lk-gallery-day-title",
+                                          children: dayGroup.label,
+                                        }),
+                                        B.jsx("span", {
+                                          className: oe(Br, "lk-gallery-day-count"),
+                                          children: dayGroup.entries.length,
+                                        }),
+                                      ],
+                                    }),
+                                    B.jsx("div", {
+                                      className: Ar,
+                                      children: dayGroup.entries.map(({ item: item, index: subIdx }) => {
+                                        const globalIdx =
+                                          momentIndexMap.get(item.momentUid) ??
+                                          momentIndexMap.get(item.canonical_uid) ??
+                                          momentIndexMap.get(item.id) ??
+                                          momentIndexMap.get(item.thumbnail_url) ??
+                                          subIdx;
+                                        const clickIdx = globalIdx >= 0 ? globalIdx : subIdx;
+                                        return B.jsx(
+                                          LazyPhotoCell,
+                                          {
+                                            item,
+                                            subIdx,
+                                            clickIdx,
+                                            onOpen: t,
+                                          },
+                                          item.momentUid || item.canonical_uid || item.id || item.md5 || subIdx,
+                                        );
+                                      }),
+                                    }),
+                                  ],
+                                },
+                                dayGroup.key,
+                              ),
+                            ),
+                          })
+                        : B.jsx("div", {
+                            className: Ar,
+                            children: monthGroup.entries.map(({ item: item, index: subIdx }) => {
+                              const globalIdx =
+                                momentIndexMap.get(item.momentUid) ??
+                                momentIndexMap.get(item.canonical_uid) ??
+                                momentIndexMap.get(item.id) ??
+                                momentIndexMap.get(item.thumbnail_url) ??
+                                subIdx;
+                              const clickIdx = globalIdx >= 0 ? globalIdx : subIdx;
+                              return B.jsx(
+                                LazyPhotoCell,
+                                {
+                                  item,
+                                  subIdx,
+                                  clickIdx,
+                                  onOpen: t,
+                                },
+                                item.momentUid || item.canonical_uid || item.id || item.md5 || subIdx,
+                              );
+                            }),
+                          }),
                     ],
                   },
-                  dayGroup.key,
-                ),
-              ),
+                  monthGroup.key,
+                );
+              }),
               B.jsxs("div", {
                 className: "lk-libfoot",
                 children: [
@@ -13128,7 +13349,7 @@ function Kr({
                           B.jsx("span", { children: "Đang tải thêm khoảnh khắc cũ…" }),
                         ],
                       })
-                    : (rm && renderedDaysCount >= n.length)
+                    : (rm && renderedMonthsCount >= monthGroups.length)
                       ? B.jsxs("span", {
                           className: "lk-lib-end",
                           children: [
@@ -13152,7 +13373,8 @@ function Kr({
                           type: "button",
                           className: "btn lk-btn-load-more",
                           onClick: () => {
-                            if (renderedDaysCount < n.length) {
+                            if (renderedMonthsCount < monthGroups.length) {
+                              setRenderedMonthsCount((prev) => Math.min(monthGroups.length, prev + 6));
                               setRenderedDaysCount((prev) => Math.min(n.length, prev + 20));
                             } else if (am) {
                               am(selectedFilter);
@@ -13168,6 +13390,20 @@ function Kr({
                               fill: "none",
                               stroke: "currentColor",
                               strokeWidth: "2.5",
+                              strokeLinecap: "round",
+                              strokeLinejoin: "round",
+                              style: { verticalAlign: "-1px", marginLeft: "6px" },
+                              children: B.jsx("polyline", { points: "6 9 12 15 18 9" }),
+                            }),
+                          ],
+                        }),
+                ],
+              }),
+            ],
+          }),
+    ],
+  });
+}
                               strokeLinecap: "round",
                               strokeLinejoin: "round",
                               style: { verticalAlign: "-2px", marginLeft: "6px" },
@@ -14037,6 +14273,73 @@ function deduplicateMoments(momentsList, friendsList = [], myUid = null, myUser 
       }
     }
 
+    // Chuẩn hóa thời gian (timestamp Ms)
+    let rawSec = 0;
+    if (m.timestampMs && typeof m.timestampMs === 'number' && m.timestampMs > 0) {
+      rawSec = m.timestampMs;
+    } else if (m.seconds !== undefined && m.seconds !== null && m.seconds !== 0) {
+      rawSec = m.seconds;
+    } else if (m.timestamp !== undefined && m.timestamp !== null && m.timestamp !== 0) {
+      rawSec = m.timestamp;
+    } else if (m.date) {
+      rawSec = m.date;
+    } else if (m.createdAt) {
+      rawSec = m.createdAt;
+    } else if (m._rawDateField) {
+      rawSec = m._rawDateField;
+    } else if (m.createTime) {
+      rawSec = m.createTime;
+    }
+
+    if (typeof rawSec === "object" && rawSec !== null) {
+      if (typeof rawSec.toMillis === "function") {
+        rawSec = rawSec.toMillis();
+      } else if (typeof rawSec.toDate === "function") {
+        rawSec = rawSec.toDate().getTime();
+      } else if (rawSec.timestampValue) {
+        rawSec = Date.parse(rawSec.timestampValue);
+      } else if (rawSec.stringValue) {
+        const p = Date.parse(rawSec.stringValue);
+        rawSec = isNaN(p) ? Number(rawSec.stringValue) : p;
+      } else if (rawSec.seconds !== undefined || rawSec._seconds !== undefined) {
+        const s = rawSec.seconds ?? rawSec._seconds ?? 0;
+        const ns = rawSec.nanoseconds ?? rawSec._nanoseconds ?? 0;
+        rawSec = s < 1e11 ? s * 1000 + Math.round(ns / 1e6) : s;
+      } else if (rawSec.integerValue) {
+        rawSec = Number(rawSec.integerValue);
+      }
+    }
+    if (typeof rawSec === "string") {
+      const parsedNum = Number(rawSec);
+      if (!isNaN(parsedNum) && rawSec.trim() !== "") {
+        rawSec = parsedNum;
+      } else {
+        const parsedDate = Date.parse(rawSec);
+        rawSec = isNaN(parsedDate) ? 0 : parsedDate;
+      }
+    }
+    let timestampMs = typeof rawSec === "number" && !isNaN(rawSec)
+      ? (rawSec < 1e11 ? Math.round(rawSec * 1000) : Math.round(rawSec))
+      : 0;
+    if (timestampMs <= 0 && m.createTime) {
+      const p = Date.parse(m.createTime);
+      if (!isNaN(p)) timestampMs = p;
+    }
+    if (timestampMs <= 0 && m.date && typeof m.date === "string") {
+      const p = Date.parse(m.date);
+      if (!isNaN(p)) timestampMs = p;
+    }
+    if (timestampMs <= 0 && m._rawDateField) {
+      if (m._rawDateField.timestampValue) {
+        const p = Date.parse(m._rawDateField.timestampValue);
+        if (!isNaN(p)) timestampMs = p;
+      }
+    }
+    if (timestampMs <= 0) {
+      timestampMs = Date.now();
+    }
+    const isoDate = (new Date(timestampMs)).toISOString();
+
     const normThumb = optimizeImageUrl(m.thumbnail_url);
     const normalizedMoment = {
       ...m,
@@ -14047,6 +14350,10 @@ function deduplicateMoments(momentsList, friendsList = [], myUid = null, myUser 
       authorUid: authorUid || user.uid,
       thumbnail_url: normThumb,
       user,
+      seconds: timestampMs,
+      timestampMs: timestampMs,
+      date: m.date && typeof m.date === "string" && m.date.includes("T") ? m.date : isoDate,
+      _rawDateField: m._rawDateField || { timestampValue: isoDate }
     };
 
     if (seenMap.has(primaryKey)) {
@@ -14061,7 +14368,11 @@ function deduplicateMoments(momentsList, friendsList = [], myUid = null, myUser 
     }
   }
 
-  return Array.from(seenMap.values()).sort((a, b) => (b.seconds || 0) - (a.seconds || 0));
+  return Array.from(seenMap.values()).sort((a, b) => {
+    const aTime = a.timestampMs || (typeof a.seconds === "number" ? (a.seconds < 1e11 ? a.seconds * 1000 : a.seconds) : 0);
+    const bTime = b.timestampMs || (typeof b.seconds === "number" ? (b.seconds < 1e11 ? b.seconds * 1000 : b.seconds) : 0);
+    return bTime - aTime;
+  });
 }
 
 function Xa() {
@@ -14222,15 +14533,15 @@ function Xa() {
     try {
       const myId = e?.localId || e?.uid || myUid;
       if (!myId) return;
-      const isAutoDeep = Boolean(appSettings?.autoLoadDeepHistory);
+      const isAutoDeep = appSettings?.autoLoadDeepHistory !== false;
 
       // Nếu người dùng chọn lọc theo 1 bạn bè cụ thể
       if (targetUid && targetUid !== myId) {
         const fetched = isAutoDeep
           ? await looketService.fetchFullUserHistory(targetUid, {
               concurrency: 30,
-              pageSize: 30,
-              maxPages: 1
+              pageSize: 50,
+              maxPages: 40
             })
           : await looketService.getMomentsHistory(targetUid, 30);
         if (fetched && fetched.length > 0) {
@@ -14281,11 +14592,11 @@ function Xa() {
       // -------------------------------------------------------------------
       let myMoments = [];
       if (isAutoDeep) {
-        // Quét sâu lịch sử ảnh của chính mình bằng 30 luồng song song (30 ảnh đầu tiên, các ảnh sau nạp on-demand khi cuộn)
+        // Quét sâu toàn bộ lịch sử ảnh của chính mình bằng 30 luồng song song (tối đa 40 trang * 50 ảnh = 2000 ảnh)
         myMoments = await looketService.fetchFullUserHistory(myId, {
           concurrency: 30,
-          pageSize: 30,
-          maxPages: 1
+          pageSize: 50,
+          maxPages: 40
         });
       } else {
         // Tải 30 ảnh gần nhất của chính mình trước
@@ -14379,7 +14690,7 @@ function Xa() {
     }
   }, [e, myUid, s.friends, i, appSettings?.autoLoadDeepHistory]);
   A.useEffect(() => {
-    if ("feed" === u) {
+    if ("feed" === u || "gallery" === u) {
       fetchMoments(y);
     }
   }, [y, u, fetchMoments]);
@@ -14525,12 +14836,26 @@ function Xa() {
         });
         const oldestMoment = matching.length > 0 ? matching[matching.length - 1] : null;
 
-        const fetched = await looketService.getMomentsHistory(
+        let fetched = await looketService.getMomentsHistory(
           queryUid,
           30,
           oldestMoment,
           matching.length
         );
+
+        // Nếu truy vấn bằng cursor không ra kết quả (do lệch index hoặc cursor), thử lại bằng offset
+        if ((!fetched || fetched.length === 0) && matching.length > 0) {
+          try {
+            fetched = await looketService.getMomentsHistory(
+              queryUid,
+              30,
+              null,
+              matching.length
+            );
+          } catch (offsetErr) {
+            console.warn("Lỗi load more fallback theo offset:", offsetErr);
+          }
+        }
 
         if (!fetched || fetched.length === 0) {
           fm(!0);
@@ -14616,7 +14941,7 @@ function Xa() {
                     onLoadMoreOlderMoments: (frUid) => xm(frUid),
                     myUid: myUid,
                     myUser: e,
-                    autoLoadDeepHistory: Boolean(appSettings?.autoLoadDeepHistory),
+                    autoLoadDeepHistory: appSettings?.autoLoadDeepHistory !== false,
                     onOpenChat: (f, m = null) => {
                       setChatTargetUser({ ...f, replyMoment: m });
                       c("chat");
@@ -14732,15 +15057,23 @@ function Xa() {
                         friends: s.friends,
                         myUid: myUid,
                         myUser: e,
-                        autoLoadDeepHistory: Boolean(appSettings?.autoLoadDeepHistory),
+                        autoLoadDeepHistory: appSettings?.autoLoadDeepHistory !== false,
                         onSwitchCompose: () => c("compose"),
                         onFetchSelfMoments: async () => {
                           fm(!1);
-                          await xm(myUid);
+                          if (appSettings?.autoLoadDeepHistory !== false) {
+                            await fetchMoments(myUid);
+                          } else {
+                            await xm(myUid);
+                          }
                         },
                         onFetchFriendMoments: async (frUid) => {
                           fm(!1);
-                          await xm(frUid);
+                          if (appSettings?.autoLoadDeepHistory !== false) {
+                            await fetchMoments(frUid);
+                          } else {
+                            await xm(frUid);
+                          }
                         },
                         onOpenCleaner: () => setOpenDateCleaner(true),
                       })

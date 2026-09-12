@@ -46,6 +46,87 @@ export function optimizeImageUrl(url) {
 }
 
 /**
+ * Chuẩn hóa mọi định dạng thời gian về đơn vị mili-giây (timestamp Ms)
+ * Hỗ trợ: số mili-giây (> 1e11), số giây (< 1e11), chuỗi ISO, chuỗi số,
+ * Đối tượng Firestore { seconds, nanoseconds }, { _seconds, _nanoseconds }, { timestampValue }, { integerValue }
+ */
+export function normalizeTimestampMs(val) {
+  if (val === null || val === undefined || val === '') return 0;
+  if (typeof val === 'number') {
+    if (isNaN(val) || !isFinite(val)) return 0;
+    return val < 1e11 ? Math.round(val * 1000) : Math.round(val);
+  }
+  if (typeof val === 'string') {
+    const num = Number(val);
+    if (!isNaN(num) && isFinite(num) && val.trim() !== '') {
+      return num < 1e11 ? Math.round(num * 1000) : Math.round(num);
+    }
+    const parsed = Date.parse(val);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  if (typeof val === 'object') {
+    if (typeof val.toMillis === 'function') {
+      return val.toMillis();
+    }
+    if (typeof val.toDate === 'function') {
+      return val.toDate().getTime();
+    }
+    if (val.timestampValue) {
+      const parsed = Date.parse(val.timestampValue);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    if (val.stringValue) {
+      return normalizeTimestampMs(val.stringValue);
+    }
+    if (val.integerValue) {
+      return normalizeTimestampMs(val.integerValue);
+    }
+    const sec = val.seconds ?? val._seconds;
+    const nsec = val.nanoseconds ?? val._nanoseconds ?? 0;
+    if (typeof sec === 'number') {
+      return Math.round(sec < 1e11 ? sec * 1000 + Math.round(nsec / 1e6) : sec);
+    }
+  }
+  return 0;
+}
+
+/**
+ * Trích xuất và chuẩn hóa timestamp mili-giây từ bất kỳ đối tượng moment nào
+ */
+export function getMomentTimestampMs(m) {
+  if (!m || typeof m !== 'object') return 0;
+  if (m.timestampMs && typeof m.timestampMs === 'number') {
+    return normalizeTimestampMs(m.timestampMs);
+  }
+  if (m.seconds !== undefined && m.seconds !== null) {
+    const ms = normalizeTimestampMs(m.seconds);
+    if (ms > 0) return ms;
+  }
+  if (m.timestamp !== undefined && m.timestamp !== null) {
+    const ms = normalizeTimestampMs(m.timestamp);
+    if (ms > 0) return ms;
+  }
+  if (m.date !== undefined && m.date !== null) {
+    const ms = normalizeTimestampMs(m.date);
+    if (ms > 0) return ms;
+  }
+  if (m.createdAt !== undefined && m.createdAt !== null) {
+    const ms = normalizeTimestampMs(m.createdAt);
+    if (ms > 0) return ms;
+  }
+  if (m._rawDateField) {
+    const ms = normalizeTimestampMs(m._rawDateField);
+    if (ms > 0) return ms;
+  }
+  if (m.createTime) {
+    const ms = normalizeTimestampMs(m.createTime);
+    if (ms > 0) return ms;
+  }
+  return 0;
+}
+
+
+/**
  * Concurrency Pool: Chạy một mảng tác vụ với giới hạn số luồng song song (mặc định 30 luồng).
  * Ngăn chặn nghẽn mạng, không làm đơ giao diện người dùng và tối đa hóa tốc độ nạp dữ liệu.
  * @param {Array<T>} items
@@ -291,13 +372,35 @@ export class LooketService {
     if (cursor) {
       let cursorValue = null;
       if (typeof cursor === 'object' && cursor !== null) {
-        if (cursor._rawDateField) {
+        if (cursor._rawDateField && typeof cursor._rawDateField === 'object') {
           cursorValue = cursor._rawDateField;
-        } else if (cursor.date) {
-          cursorValue = String(cursor.date).includes('T') ? { timestampValue: cursor.date } : { stringValue: cursor.date };
+        } else if (cursor.timestampValue) {
+          cursorValue = { timestampValue: cursor.timestampValue };
+        } else if (cursor.date && typeof cursor.date === 'object' && cursor.date.timestampValue) {
+          cursorValue = { timestampValue: cursor.date.timestampValue };
+        } else {
+          const ms = getMomentTimestampMs(cursor);
+          if (ms > 0) {
+            cursorValue = { timestampValue: new Date(ms).toISOString() };
+          } else if (cursor.date) {
+            cursorValue = String(cursor.date).includes('T') ? { timestampValue: String(cursor.date) } : { stringValue: String(cursor.date) };
+          }
         }
       } else if (typeof cursor === 'string') {
-        cursorValue = cursor.includes('T') ? { timestampValue: cursor } : { stringValue: cursor };
+        if (cursor.includes('T')) {
+          cursorValue = { timestampValue: cursor };
+        } else {
+          const num = Number(cursor);
+          if (!isNaN(num) && num > 0) {
+            const ms = num < 1e11 ? num * 1000 : num;
+            cursorValue = { timestampValue: new Date(ms).toISOString() };
+          } else {
+            cursorValue = { stringValue: cursor };
+          }
+        }
+      } else if (typeof cursor === 'number' && cursor > 0) {
+        const ms = cursor < 1e11 ? cursor * 1000 : cursor;
+        cursorValue = { timestampValue: new Date(ms).toISOString() };
       }
 
       if (cursorValue) {
@@ -305,6 +408,8 @@ export class LooketService {
           values: [cursorValue],
           before: false
         };
+      } else if (offset && offset > 0) {
+        queryPayload.structuredQuery.offset = offset;
       }
     } else if (offset && offset > 0) {
       queryPayload.structuredQuery.offset = offset;
@@ -344,11 +449,16 @@ export class LooketService {
         } else if (f.date?._seconds) {
           seconds = f.date._seconds * 1000;
         } else if (f.date?.integerValue) {
-          seconds = parseInt(f.date.integerValue, 10);
+          const iv = parseInt(f.date.integerValue, 10);
+          seconds = iv < 1e11 ? iv * 1000 : iv;
         } else if (doc.createTime) {
           const parsed = Date.parse(doc.createTime);
           if (!isNaN(parsed)) seconds = parsed;
         }
+
+        seconds = normalizeTimestampMs(seconds) || Date.now();
+        const isoDate = new Date(seconds).toISOString();
+        const rawDateField = f.date || { timestampValue: isoDate };
 
         const canonicalUid = f.canonical_uid?.stringValue || doc.name?.split('/').pop();
         const userUid = f.user?.stringValue || f.user?.referenceValue?.split('/').pop() || '';
@@ -363,15 +473,16 @@ export class LooketService {
             username: '',
             avatar: ''
           },
-          date: rawDate || (new Date(seconds)).toISOString(),
+          date: rawDate || isoDate,
           seconds,
+          timestampMs: seconds,
           caption: f.caption?.stringValue || '',
           thumbnail_url: optimizeImageUrl(rawThumb),
           md5: f.md5?.stringValue || canonicalUid,
           sent_to_all: f.sent_to_all?.booleanValue ?? true,
           sent_to_self_only: f.sent_to_self_only?.booleanValue ?? false,
           overlays: f.overlays ? (f.overlays.arrayValue?.values || []) : [],
-          _rawDateField: f.date || (rawDate ? (rawDate.includes('T') ? { timestampValue: rawDate } : { stringValue: rawDate }) : null)
+          _rawDateField: rawDateField
         };
       });
   }
@@ -410,7 +521,13 @@ export class LooketService {
         if (!isNaN(p)) seconds = p;
       } else if (f.date?._seconds) {
         seconds = f.date._seconds * 1000;
+      } else if (f.date?.integerValue) {
+        const iv = parseInt(f.date.integerValue, 10);
+        seconds = iv < 1e11 ? iv * 1000 : iv;
       }
+      seconds = normalizeTimestampMs(seconds) || Date.now();
+      const isoDate = new Date(seconds).toISOString();
+      const rawDateField = f.date || { timestampValue: isoDate };
       const userUid = f.user?.stringValue || f.user?.referenceValue?.split('/').pop() || '';
       return {
         id: cleanId,
@@ -422,14 +539,16 @@ export class LooketService {
           username: '',
           avatar: ''
         },
-        date: rawDate || (new Date(seconds)).toISOString(),
+        date: rawDate || isoDate,
         seconds,
+        timestampMs: seconds,
         caption: f.caption?.stringValue || '',
         thumbnail_url: optimizeImageUrl(rawThumb),
         md5: f.md5?.stringValue || cleanId,
         sent_to_all: f.sent_to_all?.booleanValue ?? true,
         sent_to_self_only: f.sent_to_self_only?.booleanValue ?? false,
-        overlays: f.overlays ? (f.overlays.arrayValue?.values || []) : []
+        overlays: f.overlays ? (f.overlays.arrayValue?.values || []) : [],
+        _rawDateField: rawDateField
       };
     } catch {
       return null;
@@ -724,7 +843,7 @@ export class LooketService {
     const {
       concurrency = 30,
       pageSize = 50,
-      maxPages = 20,
+      maxPages = 40,
       preloadAssets = true,
       onProgress = null
     } = options;
@@ -773,12 +892,10 @@ export class LooketService {
         .filter(Boolean)
         .sort((a, b) => (a?.pageIndex ?? 0) - (b?.pageIndex ?? 0));
 
+      let batchTotalItems = 0;
       for (const res of validBatchResults) {
         if (!res || !Array.isArray(res.items)) continue;
-        if (res.items.length === 0) {
-          hasMore = false;
-          continue;
-        }
+        batchTotalItems += res.items.length;
         for (const m of res.items) {
           const id = m.id || m.canonical_uid || m.momentUid;
           if (id && !seenIds.has(id)) {
@@ -786,15 +903,21 @@ export class LooketService {
             allMoments.push(m);
           }
         }
-        if (res.items.length < pageSize) {
-          hasMore = false;
-        }
+      }
+
+      // Chỉ dừng khi toàn bộ batch rỗng, tránh đứt đoạn khi gặp trang lỗi mạng hoặc batch rỗng tạm thời
+      if (batchTotalItems === 0) {
+        hasMore = false;
       }
 
       currentBatchStart += batchSize;
     }
 
-    allMoments.sort((a, b) => (b.seconds || 0) - (a.seconds || 0));
+    allMoments.sort((a, b) => {
+      const aTime = a.timestampMs || (typeof a.seconds === 'number' ? (a.seconds < 1e11 ? a.seconds * 1000 : a.seconds) : 0);
+      const bTime = b.timestampMs || (typeof b.seconds === 'number' ? (b.seconds < 1e11 ? b.seconds * 1000 : b.seconds) : 0);
+      return bTime - aTime;
+    });
 
     if (preloadAssets && allMoments.length > 0) {
       // Chỉ preload trước trang đầu tiên (~30 ảnh) để tránh ngốn bộ nhớ với tài khoản 3000+ ảnh,
@@ -846,7 +969,11 @@ export class LooketService {
       }
     }
 
-    allFriendMoments.sort((a, b) => (b.seconds || 0) - (a.seconds || 0));
+    allFriendMoments.sort((a, b) => {
+      const aTime = a.timestampMs || (typeof a.seconds === 'number' ? (a.seconds < 1e11 ? a.seconds * 1000 : a.seconds) : 0);
+      const bTime = b.timestampMs || (typeof b.seconds === 'number' ? (b.seconds < 1e11 ? b.seconds * 1000 : b.seconds) : 0);
+      return bTime - aTime;
+    });
 
     if (allFriendMoments.length > 0) {
       const thumbs = allFriendMoments.slice(0, 30).map((m) => m.thumbnail_url).filter(Boolean);

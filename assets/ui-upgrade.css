@@ -1910,4 +1910,148 @@
   to { opacity: 1; transform: scale(1); }
 }
 
+/* ==========================================================================
+   LIBRARY MONTH CLUSTER & DAY DRILL-DOWN STYLING
+   ========================================================================== */
+
+.lk-gallery-month-section {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.lk-gallery-month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  margin: 8px 12px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(8px);
+}
+
+.lk-gallery-month-header:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.lk-gallery-month-header:active {
+  transform: scale(0.99);
+}
+
+.lk-gallery-month-header.expanded {
+  background: rgba(255, 215, 0, 0.08);
+  border-color: rgba(255, 215, 0, 0.25);
+}
+
+.lk-gallery-month-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lk-gallery-month-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.lk-gallery-month-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #a1a1aa;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.lk-gallery-month-header.expanded .lk-gallery-month-count {
+  background: rgba(255, 215, 0, 0.18);
+  color: #ffd700;
+}
+
+.lk-gallery-month-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #d4d4d8;
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.lk-gallery-month-expand-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.lk-gallery-month-expand-btn.active {
+  background: rgba(255, 215, 0, 0.15);
+  color: #ffd700;
+}
+
+.lk-gallery-expand-text {
+  font-size: 11px;
+}
+
+.lk-month-chevron {
+  flex-shrink: 0;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lk-month-chevron.rotate-180 {
+  transform: rotate(180deg);
+}
+
+.lk-gallery-month-expanded-days {
+  display: flex;
+  flex-direction: column;
+  animation: lkFadeIn 0.2s ease-out;
+  padding-left: 4px;
+  border-left: 2px solid rgba(255, 215, 0, 0.15);
+  margin-left: 12px;
+}
+
+.lk-gallery-day-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 4px;
+  margin: 4px 0;
+  position: relative !important;
+  top: auto !important;
+  background: transparent !important;
+}
+
+.lk-gallery-day-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+
+.lk-gallery-day-count {
+  font-size: 10px;
+  font-weight: 500;
+  color: #71717a;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+
 
