@@ -33,7 +33,7 @@ import {
   U as j,
   R as N,
 } from "./moments-v212.js";
-import { looketService, optimizeImageUrl, optimizeThumbnailUrl, getLqipImageUrl } from "./locket-service.js";
+import { looketService, optimizeImageUrl, optimizeThumbnailUrl, getLqipImageUrl, memoryImageCache } from "./locket-service.js";
 import { createChatComponent, createChatIcon } from "./chat-component.js";
 const E = {
     "User-Agent": "okhttp/4.12.0",
@@ -12633,9 +12633,13 @@ const Ir = "_Gallery_8kz7b_1",
 let sharedGalleryObserver = null;
 const galleryObserverCallbacks = new Map();
 
-function getGalleryObserver() {
+function getGalleryObserver(container = null) {
   if (typeof IntersectionObserver === "undefined") return null;
-  if (!sharedGalleryObserver) {
+  const rootEl = container || (typeof document !== "undefined" ? document.querySelector("._Scroll_8kz7b_7") : null);
+  if (!sharedGalleryObserver || (rootEl && sharedGalleryObserver.root !== rootEl)) {
+    if (sharedGalleryObserver) {
+      try { sharedGalleryObserver.disconnect(); } catch {}
+    }
     sharedGalleryObserver = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -12650,7 +12654,8 @@ function getGalleryObserver() {
         }
       },
       {
-        rootMargin: "350px 0px 350px 0px",
+        root: rootEl || null,
+        rootMargin: "600px 0px 600px 0px",
         threshold: 0.01,
       }
     );
@@ -12658,10 +12663,11 @@ function getGalleryObserver() {
   return sharedGalleryObserver;
 }
 
+const localImageCache = (typeof memoryImageCache !== "undefined" && memoryImageCache) ? memoryImageCache : new Set();
+
 function LazyPhotoCell({ item, subIdx, clickIdx, onOpen }) {
-  const isInitialBatch = typeof subIdx === "number" && subIdx < 15;
+  const isInitialBatch = typeof subIdx === "number" && (subIdx < 15 || subIdx < 30);
   const [inView, setInView] = A.useState(() => isInitialBatch);
-  const [imgLoaded, setImgLoaded] = A.useState(false);
   const cellRef = A.useRef(null);
   const imgRef = A.useRef(null);
 
@@ -12675,9 +12681,18 @@ function LazyPhotoCell({ item, subIdx, clickIdx, onOpen }) {
     }) || item.thumbnail_url;
   }, [item?.thumbnail_url]);
 
+  const lqipUrl = A.useMemo(() => {
+    if (!item?.thumbnail_url) return "";
+    return getLqipImageUrl(item.thumbnail_url) || "";
+  }, [item?.thumbnail_url]);
+
+  const isAlreadyLoaded = !!(thumbUrl && (localImageCache.has(thumbUrl) || (typeof Image !== "undefined" && imgRef.current?.complete)));
+  const [imgLoaded, setImgLoaded] = A.useState(() => isAlreadyLoaded);
+
   // Check if image is already cached in browser memory (instant 0ms display)
   A.useEffect(() => {
-    if (imgRef.current && imgRef.current.complete) {
+    if ((imgRef.current && imgRef.current.complete) || (thumbUrl && localImageCache.has(thumbUrl))) {
+      if (thumbUrl) localImageCache.add(thumbUrl);
       setImgLoaded(true);
     }
   }, [inView, thumbUrl]);
@@ -12686,7 +12701,8 @@ function LazyPhotoCell({ item, subIdx, clickIdx, onOpen }) {
     if (inView) return;
     const el = cellRef.current;
     if (!el) return;
-    const observer = getGalleryObserver();
+    const scrollContainer = el.closest ? el.closest("._Scroll_8kz7b_7") : null;
+    const observer = getGalleryObserver(scrollContainer);
     if (!observer) {
       setInView(true);
       return;
@@ -12707,6 +12723,11 @@ function LazyPhotoCell({ item, subIdx, clickIdx, onOpen }) {
       ref: cellRef,
       type: "button",
       className: oe($r, "lk-gallery-cell", (!inView || !imgLoaded) && "lk-cell-skeleton"),
+      style: (!imgLoaded && lqipUrl) ? {
+        backgroundImage: `url("${lqipUrl}")`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      } : undefined,
       title: `${authorName} · ${$e(item.seconds || 0)}`,
       "aria-label": `Mở khoảnh khắc của ${authorName}`,
       onClick: () => onOpen(clickIdx, item.user?.uid),
@@ -12723,7 +12744,10 @@ function LazyPhotoCell({ item, subIdx, clickIdx, onOpen }) {
             transform: imgLoaded ? "scale(1)" : "scale(1.03)",
             transition: "opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)",
           },
-          onLoad: () => setImgLoaded(true),
+          onLoad: () => {
+            if (thumbUrl) localImageCache.add(thumbUrl);
+            setImgLoaded(true);
+          },
         }),
         B.jsxs("span", {
           className: Vr,
@@ -14550,8 +14574,9 @@ function Xa() {
       }
     }
   }, [r, s.friends, myUid, e, i, deletedMomentIds]);
+  const hasLoadedHistoryRef = A.useRef(false);
   const isFetchingMomentsRef = A.useRef(false);
-  const fetchMoments = A.useCallback(async (targetUid = null) => {
+  const fetchMoments = A.useCallback(async (targetUid = null, forceDeep = false) => {
     if (isFetchingMomentsRef.current) return;
     isFetchingMomentsRef.current = true;
     try {
@@ -14560,6 +14585,40 @@ function Xa() {
       const myId = e?.localId || e?.uid || myUid;
       if (!myId) return;
       const isAutoDeep = appSettings?.autoLoadDeepHistory !== false;
+
+      // Tránh lặp lại quét sâu 60 kết nối nặng nề khi người dùng chỉ bấm chuyển tab qua lại mà đã có dữ liệu
+      if (!targetUid && !forceDeep && hasLoadedHistoryRef.current && cleanMoments.length > 0) {
+        const feedMoments = await looketService.getMomentsHistory(null, 30);
+        if (feedMoments && feedMoments.length > 0) {
+          const thumbs = feedMoments.map((m) =>
+            optimizeImageUrl(m.thumbnail_url, { width: 180, height: 180, format: 'webp', quality: 65 }) || m.thumbnail_url
+          ).filter(Boolean);
+          if (thumbs.length > 0) {
+            looketService.preloadImages(thumbs.slice(0, 30), 30).catch(() => {});
+          }
+          await new Promise((resolve) => {
+            chrome.storage.local.get(["moments", "deletedMomentIds"], (res) => {
+              const cur = res.moments || [];
+              const deletedSet = new Set(res?.deletedMomentIds || []);
+              const filtered = feedMoments.filter((item) => {
+                const uid = item.canonical_uid || item.momentUid || item.id;
+                const imgKey = getImageKey(item.thumbnail_url);
+                return !(uid && deletedSet.has(uid)) && !(imgKey && deletedSet.has(imgKey));
+              });
+              const merged = deduplicateMoments([...filtered, ...cur], s.friends, myId, e, deletedSet);
+              if (merged.length !== cur.length) {
+                chrome.storage.local.set({ moments: merged }, () => {
+                  i();
+                  resolve();
+                });
+              } else {
+                resolve();
+              }
+            });
+          });
+        }
+        return;
+      }
 
       // Nếu người dùng chọn lọc theo 1 bạn bè cụ thể
       if (targetUid && targetUid !== myId) {
@@ -14619,6 +14678,7 @@ function Xa() {
       // QUY TRÌNH ƯU TIÊN: TÀI KHOẢN ĐANG DÙNG (MY_UID) ĐƯỢC TẢI TRƯỚC HẾT
       // -------------------------------------------------------------------
       let myMoments = [];
+      hasLoadedHistoryRef.current = true;
       if (isAutoDeep) {
         // Quét sâu toàn bộ lịch sử ảnh của chính mình bằng 30 luồng song song (tối đa 40 trang * 50 ảnh = 2000 ảnh)
         myMoments = await looketService.fetchFullUserHistory(myId, {
@@ -14969,7 +15029,7 @@ function Xa() {
                     friends: s.friends,
                     selectedFriend: y,
                     onSelectFriend: x,
-                    onRefreshMoments: () => fetchMoments(y),
+                    onRefreshMoments: () => fetchMoments(y, true),
                     onLoadMoreOlderMoments: (frUid) => xm(frUid),
                     myUid: myUid,
                     myUser: e,

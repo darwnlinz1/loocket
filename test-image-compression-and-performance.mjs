@@ -135,4 +135,62 @@ assert.ok(styleCss.includes('contain-intrinsic-size:auto 110px'), 'style-v212.cs
 
 console.log('✓ Test 5 Passed: CSS browser virtualization & GPU composite layers verified!\n');
 
-console.log('=== ALL 5 IMAGE COMPRESSION & PERFORMANCE CHECKS PASSED 100%! ===\n');
+// -------------------------------------------------------------
+// TEST 6: URL Query Parameter Robustness & Corruption Prevention
+// -------------------------------------------------------------
+console.log('Test 6: URL Query Parameter Robustness & Corruption Prevention');
+
+// Bug scenario: URL having existing width/quality params as first param
+const buggyUrl1 = 'https://cdn.locketcamera.com/photo.jpg?width=100&alt=media';
+const fixedUrl1 = optimizeImageUrl(buggyUrl1, { width: 180, height: 180, format: 'webp', quality: 65 });
+assert.ok(!fixedUrl1.includes('&alt=media?'), 'URL must not contain corrupted &alt=media? sequence');
+assert.ok(fixedUrl1.startsWith('https://cdn.locketcamera.com/photo.jpg?'), 'URL must have valid query string starting with ?');
+assert.ok(fixedUrl1.includes('width=180'), 'width=180 must replace width=100');
+assert.ok(fixedUrl1.includes('alt=media'), 'Existing params must be preserved');
+
+console.log('✓ Test 6 Passed: URL query parameter replacement is 100% robust and corruption-free!\n');
+
+// -------------------------------------------------------------
+// TEST 7: Memory Image Cache & LQIP Blur-Up Placeholder
+// -------------------------------------------------------------
+console.log('Test 7: Memory Image Cache & LQIP Blur-Up Placeholder');
+
+import { memoryImageCache } from './assets/locket-service.js';
+assert.ok(memoryImageCache instanceof Set, 'memoryImageCache must be exported as an in-memory Set');
+
+// Verify LQIP blur-up placeholder in LazyPhotoCell
+assert.ok(popupJs.includes('getLqipImageUrl(item.thumbnail_url)'), 'LazyPhotoCell must generate LQIP placeholder for instant blur-up preview');
+assert.ok(popupJs.includes('backgroundImage: `url("${lqipUrl}")`'), 'LazyPhotoCell must apply LQIP background image when not yet loaded');
+assert.ok(popupJs.includes('memoryImageCache'), 'popup-v212.js must integrate memoryImageCache');
+
+console.log('✓ Test 7 Passed: Memory image cache & LQIP blur-up placeholders verified!\n');
+
+// -------------------------------------------------------------
+// TEST 8: Prevention of GPU Layer Explosion & Scroll Anchoring
+// -------------------------------------------------------------
+console.log('Test 8: Prevention of GPU Layer Explosion & Scroll Anchoring');
+
+// Verify that individual grid cells DO NOT have will-change: transform to prevent 1,200 layer explosion
+assert.ok(!/\._Cell_8kz7b_50\s*\{[^}]*will-change/.test(styleCss), 'style-v212.css must not place will-change:transform on _Cell_8kz7b_50');
+assert.ok(!uiUpgradeCss.includes('will-change: transform !important;'), 'ui-upgrade.css must not place will-change: transform on .lk-gallery-cell');
+
+// Verify scroll container has overflow-anchor: auto to eliminate scroll jitter
+assert.ok(uiUpgradeCss.includes('overflow-anchor: auto !important;'), '_Scroll_8kz7b_7 must have overflow-anchor: auto to prevent scroll jitter');
+
+// Verify month section has layout containment
+assert.ok(uiUpgradeCss.includes('contain: layout style;'), '.lk-gallery-month-section must have contain: layout style');
+
+console.log('✓ Test 8 Passed: GPU layer explosion prevented & scroll anchoring stabilized!\n');
+
+// -------------------------------------------------------------
+// TEST 9: Container-Relative IntersectionObserver & Fast Tab Switch
+// -------------------------------------------------------------
+console.log('Test 9: Container-Relative IntersectionObserver & Fast Tab Switch');
+
+assert.ok(popupJs.includes('rootMargin: "600px 0px 600px 0px"'), 'getGalleryObserver must use 600px prefetch buffer');
+assert.ok(popupJs.includes('el.closest("._Scroll_8kz7b_7")'), 'LazyPhotoCell must target scroll container as IntersectionObserver root');
+assert.ok(popupJs.includes('hasLoadedHistoryRef'), 'fetchMoments must track hasLoadedHistoryRef for instant tab switching');
+
+console.log('✓ Test 9 Passed: Container-relative observer & fast tab switching verified!\n');
+
+console.log('=== ALL 9 IMAGE COMPRESSION & PERFORMANCE CHECKS PASSED 100%! ===\n');

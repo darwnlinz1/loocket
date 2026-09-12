@@ -94,7 +94,6 @@ html,body{background:
   transition:transform var(--dur-fast) var(--ease),box-shadow var(--dur-fast) var(--ease),filter var(--dur-fast) var(--ease);
   content-visibility:auto;
   contain-intrinsic-size:auto 110px;
-  will-change:transform;
 }
 ._Cell_8kz7b_50:hover{
   z-index:1;

@@ -955,6 +955,7 @@
 ._Scroll_8kz7b_7 {
   scroll-behavior: smooth !important;
   overscroll-behavior: contain !important;
+  overflow-anchor: auto !important;
 }
 
 .lk-card {
@@ -1304,7 +1305,6 @@ body[data-accent="orange"] {
   background-color: rgba(255, 255, 255, 0.05) !important;
   position: relative;
   overflow: hidden;
-  will-change: transform, opacity;
 }
 
 .lk-cell-skeleton::after {
@@ -1320,7 +1320,6 @@ body[data-accent="orange"] {
   );
   animation: lk-skeleton-shimmer 1.6s infinite ease-in-out;
   pointer-events: none;
-  will-change: transform;
 }
 
 @keyframes lk-skeleton-shimmer {
@@ -1337,11 +1336,9 @@ body[data-accent="orange"] {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
               opacity 0.25s ease !important;
-  will-change: transform !important;
   border-radius: 16px !important;
   content-visibility: auto;
   contain-intrinsic-size: auto 110px;
-  transform: translateZ(0);
 }
 
 .lk-cell-img {
@@ -2006,6 +2003,7 @@ body[data-accent="orange"] {
   position: relative;
   content-visibility: auto;
   contain-intrinsic-size: auto 300px;
+  contain: layout style;
 }
 
 .lk-gallery-month-header {
@@ -2205,8 +2203,6 @@ body,
 ._Body_1bafh_53,
 .lk-conv-list,
 .lk-room-messages,
-.lk-gallery-month-section,
-._Cell_8kz7b_50,
 ._Card_1bafh_63,
 .lk-msg-row {
   transform: translateZ(0);

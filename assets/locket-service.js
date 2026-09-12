@@ -38,6 +38,8 @@ export function generateUUID() {
  * Optimizes image URLs by routing through Fastly CDN Edge Proxy
  * Replaces both firebasestorage.googleapis.com:443 and firebasestorage.googleapis.com
  */
+export const memoryImageCache = new Set();
+
 export function optimizeImageUrl(url, options = null) {
   if (!url || typeof url !== 'string') return '';
   let optimized = url
@@ -54,22 +56,32 @@ export function optimizeImageUrl(url, options = null) {
   }
 
   const { width, height, format = 'webp', quality = 65, fit } = options;
-  const parts = [];
-  if (width) parts.push(`width=${encodeURIComponent(width)}`);
-  if (height) parts.push(`height=${encodeURIComponent(height)}`);
-  if (format) parts.push(`format=${encodeURIComponent(format)}`);
-  if (quality) parts.push(`quality=${encodeURIComponent(quality)}`);
-  if (fit) parts.push(`fit=${encodeURIComponent(fit)}`);
+  try {
+    const parsed = new URL(optimized);
+    if (width) parsed.searchParams.set('width', String(width));
+    if (height) parsed.searchParams.set('height', String(height));
+    if (format) parsed.searchParams.set('format', String(format));
+    if (quality) parsed.searchParams.set('quality', String(quality));
+    if (fit) parsed.searchParams.set('fit', String(fit));
+    return parsed.toString();
+  } catch {
+    const parts = [];
+    if (width) parts.push(`width=${encodeURIComponent(width)}`);
+    if (height) parts.push(`height=${encodeURIComponent(height)}`);
+    if (format) parts.push(`format=${encodeURIComponent(format)}`);
+    if (quality) parts.push(`quality=${encodeURIComponent(quality)}`);
+    if (fit) parts.push(`fit=${encodeURIComponent(fit)}`);
 
-  if (parts.length === 0) return optimized;
+    if (parts.length === 0) return optimized;
 
-  let cleanUrl = optimized
-    .replace(/[&?](?:width|height|format|quality|fit)=[^&]*/g, '')
-    .replace(/\?&/, '?')
-    .replace(/\?$/, '');
+    let cleanUrl = optimized
+      .replace(/[&?](?:width|height|format|quality|fit)=[^&]*/g, '')
+      .replace(/\?&/, '?')
+      .replace(/\?$/, '');
 
-  const joinChar = cleanUrl.includes('?') ? '&' : '?';
-  return `${cleanUrl}${joinChar}${parts.join('&')}`;
+    const joinChar = cleanUrl.includes('?') ? '&' : '?';
+    return `${cleanUrl}${joinChar}${parts.join('&')}`;
+  }
 }
 
 /**
@@ -233,6 +245,7 @@ export async function preloadImagesConcurrently(urls, concurrency = 30) {
             }, 8000);
             img.onload = () => {
               clearTimeout(timer);
+              memoryImageCache.add(url);
               resolve({ url, success: true });
             };
             img.onerror = () => {
