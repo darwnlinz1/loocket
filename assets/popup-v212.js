@@ -13392,20 +13392,6 @@ function Kr({
                               strokeWidth: "2.5",
                               strokeLinecap: "round",
                               strokeLinejoin: "round",
-                              style: { verticalAlign: "-1px", marginLeft: "6px" },
-                              children: B.jsx("polyline", { points: "6 9 12 15 18 9" }),
-                            }),
-                          ],
-                        }),
-                ],
-              }),
-            ],
-          }),
-    ],
-  });
-}
-                              strokeLinecap: "round",
-                              strokeLinejoin: "round",
                               style: { verticalAlign: "-2px", marginLeft: "6px" },
                               children: B.jsx("polyline", { points: "6 9 12 15 18 9" }),
                             }),
@@ -15850,5 +15836,121 @@ if (
       "<b>Lỗi:</b> Môi trường không hợp lệ. loocket phải chạy bên trong một tiện ích Chrome."),
     new Error("loocket must run inside a Chrome extension context")
   );
-ne.createRoot(Ya).render(B.jsx(A.StrictMode, { children: B.jsx(Ga, {}) }));
+class LkErrorBoundary extends A.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("Loocket App Render Error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return B.jsxs("div", {
+        className: "lk-error-fallback",
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+          padding: "24px",
+          color: "#fff",
+          textAlign: "center",
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        },
+        children: [
+          B.jsx("div", {
+            style: {
+              width: "56px",
+              height: "56px",
+              borderRadius: "50%",
+              background: "rgba(255, 69, 58, 0.15)",
+              color: "#ff453a",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: "16px"
+            },
+            children: B.jsx("svg", {
+              width: "28",
+              height: "28",
+              viewBox: "0 0 24 24",
+              fill: "none",
+              stroke: "currentColor",
+              strokeWidth: "2",
+              strokeLinecap: "round",
+              strokeLinejoin: "round",
+              children: [
+                B.jsx("circle", { cx: "12", cy: "12", r: "10" }),
+                B.jsx("line", { x1: "12", y1: "8", x2: "12", y2: "12" }),
+                B.jsx("line", { x1: "12", y1: "16", x2: "12.01", y2: "16" })
+              ]
+            })
+          }),
+          B.jsx("h2", {
+            style: { fontSize: "17px", fontWeight: "700", marginBottom: "8px" },
+            children: "Đã xảy ra sự cố khi tải giao diện"
+          }),
+          B.jsx("p", {
+            style: { fontSize: "13px", color: "#a1a1aa", marginBottom: "20px", maxWidth: "320px", lineHeight: "1.4" },
+            children: "loocket gặp lỗi không mong muốn. Bạn có thể nhấn Tải lại bên dưới."
+          }),
+          B.jsxs("div", {
+            style: { display: "flex", gap: "10px" },
+            children: [
+              B.jsx("button", {
+                type: "button",
+                style: {
+                  padding: "10px 18px",
+                  borderRadius: "12px",
+                  background: "#ffd700",
+                  color: "#000",
+                  fontWeight: "600",
+                  fontSize: "13px",
+                  border: "none",
+                  cursor: "pointer"
+                },
+                onClick: () => window.location.reload(),
+                children: "Tải lại trang"
+              }),
+              B.jsx("button", {
+                type: "button",
+                style: {
+                  padding: "10px 18px",
+                  borderRadius: "12px",
+                  background: "rgba(255, 255, 255, 0.1)",
+                  color: "#fff",
+                  fontWeight: "600",
+                  fontSize: "13px",
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  cursor: "pointer"
+                },
+                onClick: () => {
+                  try {
+                    chrome.storage.local.clear(() => window.location.reload());
+                  } catch (e) {
+                    window.location.reload();
+                  }
+                },
+                children: "Đặt lại dữ liệu"
+              })
+            ]
+          })
+        ]
+      });
+    }
+    return this.props.children;
+  }
+}
+ne.createRoot(Ya).render(
+  B.jsx(A.StrictMode, {
+    children: B.jsx(LkErrorBoundary, {
+      children: B.jsx(Ga, {})
+    })
+  })
+);
 export { $ as R, DateRangeCleanerModal, filterMomentsByDateRange, executeDeleteMomentsByKeys };

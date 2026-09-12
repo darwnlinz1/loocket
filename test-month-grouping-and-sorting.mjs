@@ -202,4 +202,18 @@ assert.ok(uiUpgradeCss.includes('.lk-gallery-day-header'), 'CSS must style .lk-g
 
 console.log('✓ Test 5 Passed: All month cluster and expandable day CSS styles verified!\n');
 
-console.log('=== ALL 5 MONTH GROUPING & SORTING CHECKS PASSED 100%! ===');
+// -------------------------------------------------------------
+// TEST 6: Zero Syntax Error & Clean ESM Module Parsing
+// -------------------------------------------------------------
+console.log('Test 6: ESM Module Parsing & Zero Syntax Errors');
+try {
+  await import('./assets/popup-v212.js');
+} catch (err) {
+  if (err.name === 'SyntaxError') {
+    assert.fail('popup-v212.js has syntax errors: ' + err.message);
+  }
+}
+console.log('✓ Test 6 Passed: popup-v212.js parses cleanly as a valid ES module with zero syntax errors!\n');
+
+console.log('=== ALL 6 MONTH GROUPING & SORTING CHECKS PASSED 100%! ===');
+
