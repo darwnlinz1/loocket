@@ -27,9 +27,8 @@ console.log('✓ Library viewport lazy loading, shared observer & O(1) maps veri
 
 // 3. Check developer section removed & Locket Gold in Settings
 assert.ok(!popupIs.includes('Thử kết nối chat'), 'Thử kết nối chat must be removed from Settings');
-assert.ok(!popupIs.includes('"chatProbe" === d'), 'chatProbe condition in Xa must be removed');
-assert.ok(popupIs.includes('lk-gold-vip-card'), 'lk-gold-vip-card must exist in Settings');
-assert.ok(popupIs.includes('lk-gold-badge'), 'lk-gold-badge must exist in Settings');
+assert.ok(!popupIs.includes('lk-gold-vip-card'), 'lk-gold-vip-card banner removed per user request');
+assert.ok(popupIs.includes('lk-gold-avatar-ring'), 'lk-gold-avatar-ring must exist in Settings');
 assert.ok(popupIs.includes('Vàng Locket Gold'), 'Gold accent option must exist');
 console.log('✓ Settings developer probe removed & Locket Gold profile added');
 

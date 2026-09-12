@@ -1409,17 +1409,9 @@
   border: none !important;
 }
 
-/* Gold Member Banner (Screenshot 1) */
+/* Gold Member Banner (Removed per user request) */
 .lk-gold-vip-card {
-  margin: 10px 0 14px !important;
-  padding: 10px 18px !important;
-  border: 1.5px solid #8d6b1d !important;
-  background: linear-gradient(90deg, #1c1808 0%, #292106 100%) !important;
-  border-radius: 9999px !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 215, 0, 0.2) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
+  display: none !important;
 }
 
 .lk-gold-vip-card::after {
