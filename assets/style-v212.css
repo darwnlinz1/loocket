@@ -378,6 +378,14 @@ body:before{
 }
 
 /* ===== personalization, skeletons and detail viewer ===== */
+:root[data-accent="gold"]{
+  --brand-300:#ffeaa7;--brand-400:#ffd700;--brand-500:#f5a623;
+  --brand-600:#d48806;--brand-700:#ad6800;--brand-soft:#382c14;--brand-glow:#f5a6234f;
+}
+:root[data-accent="rose"]{
+  --brand-300:#ffb8d0;--brand-400:#ff5e89;--brand-500:#ff2d55;
+  --brand-600:#d81b43;--brand-700:#b00f33;--brand-soft:#401725;--brand-glow:#ff2d554f;
+}
 :root[data-accent="violet"]{
   --brand-300:#d9c2ff;--brand-400:#b991ff;--brand-500:#9364e8;
   --brand-600:#7445c7;--brand-700:#58329d;--brand-soft:#2b2040;--brand-glow:#9364e84f;

@@ -849,9 +849,9 @@
 
 .lk-gallery-filter-pill.active {
   background: rgba(30, 27, 30, 0.95) !important;
-  border: 1.5px solid #f59e0b !important;
+  border: 1.5px solid var(--brand-400) !important;
   color: #ffffff !important;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.25) !important;
+  box-shadow: 0 0 12px var(--brand-glow) !important;
 }
 
 .lk-filter-emoji {
@@ -1073,19 +1073,101 @@
   --lk-gold-border: rgba(255, 215, 0, 0.28);
 }
 
-/* Gold Theme & Accent Overrides */
+/* Universal 5-Color Accent System (Gold, Rose, Blue, Violet, Orange) */
+:root[data-accent="gold"],
 [data-accent="gold"],
-.theme-gold,
-:root[data-accent="gold"] {
+body[data-accent="gold"],
+.theme-gold {
   --brand-300: #ffeaa7 !important;
   --brand-400: #ffd700 !important;
   --brand-500: #f5a623 !important;
   --brand-600: #d48806 !important;
   --brand-700: #ad6800 !important;
-  --brand-soft: #382c14 !important;
+  --brand-soft: rgba(245, 166, 35, 0.14) !important;
   --brand-glow: rgba(245, 166, 35, 0.38) !important;
   --glow-brand: rgba(245, 166, 35, 0.38) !important;
+  --accent-primary: #ffd700 !important;
+  --accent-secondary: #f5a623 !important;
+  --accent-soft: rgba(255, 215, 0, 0.12) !important;
+  --accent-border: rgba(255, 215, 0, 0.3) !important;
+  --accent-glow: rgba(255, 215, 0, 0.45) !important;
   --chat-bubble-me: linear-gradient(135deg, #f5a623 0%, #d48806 100%) !important;
+}
+
+:root[data-accent="rose"],
+[data-accent="rose"],
+body[data-accent="rose"] {
+  --brand-300: #ffb8d0 !important;
+  --brand-400: #ff5e89 !important;
+  --brand-500: #ff2d55 !important;
+  --brand-600: #d81b43 !important;
+  --brand-700: #b00f33 !important;
+  --brand-soft: rgba(255, 45, 85, 0.14) !important;
+  --brand-glow: rgba(255, 45, 85, 0.38) !important;
+  --glow-brand: rgba(255, 45, 85, 0.38) !important;
+  --accent-primary: #ff5e89 !important;
+  --accent-secondary: #ff2d55 !important;
+  --accent-soft: rgba(255, 45, 85, 0.12) !important;
+  --accent-border: rgba(255, 45, 85, 0.3) !important;
+  --accent-glow: rgba(255, 45, 85, 0.45) !important;
+  --chat-bubble-me: linear-gradient(135deg, #ff2d55 0%, #c71f45 100%) !important;
+}
+
+:root[data-accent="blue"],
+[data-accent="blue"],
+body[data-accent="blue"] {
+  --brand-300: #a5d2ff !important;
+  --brand-400: #389eff !important;
+  --brand-500: #007aff !important;
+  --brand-600: #0062cc !important;
+  --brand-700: #004d9f !important;
+  --brand-soft: rgba(0, 122, 255, 0.14) !important;
+  --brand-glow: rgba(0, 122, 255, 0.38) !important;
+  --glow-brand: rgba(0, 122, 255, 0.38) !important;
+  --accent-primary: #389eff !important;
+  --accent-secondary: #007aff !important;
+  --accent-soft: rgba(0, 122, 255, 0.12) !important;
+  --accent-border: rgba(0, 122, 255, 0.3) !important;
+  --accent-glow: rgba(0, 122, 255, 0.45) !important;
+  --chat-bubble-me: linear-gradient(135deg, #007aff 0%, #0056b3 100%) !important;
+}
+
+:root[data-accent="violet"],
+[data-accent="violet"],
+body[data-accent="violet"] {
+  --brand-300: #ddbbf8 !important;
+  --brand-400: #c072f5 !important;
+  --brand-500: #af52de !important;
+  --brand-600: #9333ea !important;
+  --brand-700: #7e22ce !important;
+  --brand-soft: rgba(175, 82, 222, 0.14) !important;
+  --brand-glow: rgba(175, 82, 222, 0.38) !important;
+  --glow-brand: rgba(175, 82, 222, 0.38) !important;
+  --accent-primary: #c072f5 !important;
+  --accent-secondary: #af52de !important;
+  --accent-soft: rgba(175, 82, 222, 0.12) !important;
+  --accent-border: rgba(175, 82, 222, 0.3) !important;
+  --accent-glow: rgba(175, 82, 222, 0.45) !important;
+  --chat-bubble-me: linear-gradient(135deg, #af52de 0%, #8222bd 100%) !important;
+}
+
+:root[data-accent="orange"],
+[data-accent="orange"],
+body[data-accent="orange"] {
+  --brand-300: #ffd0a4 !important;
+  --brand-400: #ffa538 !important;
+  --brand-500: #ff9500 !important;
+  --brand-600: #d97706 !important;
+  --brand-700: #b45309 !important;
+  --brand-soft: rgba(255, 149, 0, 0.14) !important;
+  --brand-glow: rgba(255, 149, 0, 0.38) !important;
+  --glow-brand: rgba(255, 149, 0, 0.38) !important;
+  --accent-primary: #ffa538 !important;
+  --accent-secondary: #ff9500 !important;
+  --accent-soft: rgba(255, 149, 0, 0.12) !important;
+  --accent-border: rgba(255, 149, 0, 0.3) !important;
+  --accent-glow: rgba(255, 149, 0, 0.45) !important;
+  --chat-bubble-me: linear-gradient(135deg, #ff9500 0%, #c75c00 100%) !important;
 }
 
 /* Locket Gold Badge */
@@ -1110,10 +1192,10 @@
   line-height: 1;
 }
 
-/* Gold Avatar Ring */
+/* Dynamic Accent Avatar Ring */
 .lk-gold-avatar-ring {
-  border: 2px solid #ffd700 !important;
-  box-shadow: 0 0 12px rgba(255, 215, 0, 0.45) !important;
+  border: 2px solid var(--brand-400) !important;
+  box-shadow: 0 0 12px var(--brand-glow) !important;
   border-radius: 50% !important;
 }
 
@@ -1372,14 +1454,15 @@
 /* 2. Library Friend Filter Bar & Active Pill Polish (Image 2) */
 .lk-gallery-filter-pill.active {
   background: rgba(30, 27, 30, 0.95) !important;
-  border: 1.5px solid #f59e0b !important;
+  border: 1.5px solid var(--brand-400) !important;
   color: #ffffff !important;
-  box-shadow: 0 0 14px rgba(245, 158, 11, 0.35) !important;
+  box-shadow: 0 0 14px var(--brand-glow) !important;
 }
 
 .lk-gallery-filter-pill.active .lk-filter-count {
-  background: rgba(255, 255, 255, 0.16) !important;
-  color: #ffffff !important;
+  background: var(--brand-soft) !important;
+  color: var(--brand-400) !important;
+  border: 1px solid var(--brand-glow) !important;
 }
 
 /* 3. Settings VIP Gold Profile Card & Member Banner (Image 1) */
@@ -1392,8 +1475,8 @@
 }
 
 .lk-gold-avatar-ring {
-  border: 2.5px solid #ffd700 !important;
-  box-shadow: 0 0 16px rgba(255, 215, 0, 0.45) !important;
+  border: 2.5px solid var(--brand-400) !important;
+  box-shadow: 0 0 16px var(--brand-glow) !important;
   border-radius: 50% !important;
 }
 
@@ -1481,11 +1564,8 @@
 }
 
 ._Toggle_1mni3_134._on_1mni3_145 {
-  background: #db2777 !important;
-}
-
-[data-accent="gold"] ._Toggle_1mni3_134._on_1mni3_145 {
-  background: #f59e0b !important;
+  background: var(--brand-500) !important;
+  box-shadow: 0 4px 14px var(--brand-glow) !important;
 }
 
 ._Knob_1mni3_149 {
@@ -1526,24 +1606,24 @@
   visibility: hidden !important;
 }
 
-/* Tab "Đăng" (+ button) bright gold */
+/* Tab "Đăng" (+ button) dynamic accent */
 ._Tab_te3jl_11._accent_te3jl_27,
 ._Tab_te3jl_11._accent_te3jl_27 ._Icon_te3jl_31,
 ._Tab_te3jl_11._accent_te3jl_27 ._Label_te3jl_39 {
-  color: #ffd700 !important;
+  color: var(--brand-400) !important;
 }
 
-/* Active tab style: soft rounded pill container background with single yellow-gold underline */
+/* Active tab style: soft rounded pill container background with single accent underline */
 ._Tab_te3jl_11._active_te3jl_24 {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: var(--brand-soft, rgba(255, 255, 255, 0.08)) !important;
   box-shadow: none !important;
 }
 
 ._Tab_te3jl_11._active_te3jl_24 ._Icon_te3jl_31,
 ._Tab_te3jl_11._active_te3jl_24 .lk-ios-icon,
 ._Tab_te3jl_11._active_te3jl_24 svg {
-  color: #ffd700 !important;
-  stroke: #ffd700 !important;
+  color: var(--brand-400) !important;
+  stroke: var(--brand-400) !important;
 }
 
 ._Tab_te3jl_11._active_te3jl_24 ._Label_te3jl_39 {
@@ -1557,10 +1637,10 @@
   display: block !important;
   width: 18px !important;
   height: 3px !important;
-  background: #ffd700 !important;
+  background: var(--brand-400) !important;
   border-radius: 999px !important;
   margin: 3px auto 0 !important;
-  box-shadow: 0 0 8px rgba(255, 215, 0, 0.6) !important;
+  box-shadow: 0 0 8px var(--brand-glow) !important;
   animation: lk-tab-indicator-spring 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
@@ -1594,9 +1674,9 @@
 
 .lk-date-cleaner-card {
   background: #151418;
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  border: 1px solid var(--accent-border, var(--brand-400));
   border-radius: 26px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 215, 0, 0.12);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px var(--brand-glow);
   width: 100%;
   max-width: 440px;
   max-height: 90vh;
@@ -1617,7 +1697,7 @@
 .lk-date-cleaner-title {
   font-size: 15.5px;
   font-weight: 700;
-  color: #ffd700;
+  color: var(--brand-400);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1698,8 +1778,8 @@
 
 .lk-cleaner-select:focus,
 .lk-cleaner-input:focus {
-  border-color: #ffd700;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.25);
+  border-color: var(--brand-400);
+  box-shadow: 0 0 10px var(--brand-glow);
 }
 
 .lk-cleaner-presets {
@@ -1722,9 +1802,9 @@
 }
 
 .lk-cleaner-preset-btn:hover {
-  background: rgba(255, 215, 0, 0.16);
-  border-color: #ffd700;
-  color: #ffd700;
+  background: var(--brand-soft);
+  border-color: var(--brand-400);
+  color: var(--brand-400);
   transform: translateY(-1px);
 }
 
@@ -1739,10 +1819,10 @@
   justify-content: space-between;
   padding: 10px 14px;
   border-radius: 14px;
-  background: rgba(255, 215, 0, 0.08);
-  border: 1px solid rgba(255, 215, 0, 0.2);
+  background: var(--brand-soft);
+  border: 1px solid var(--accent-border, var(--brand-400));
   font-size: 12px;
-  color: #fef08a;
+  color: var(--brand-300);
   font-weight: 600;
 }
 
@@ -1947,8 +2027,8 @@
 }
 
 .lk-gallery-month-header.expanded {
-  background: rgba(255, 215, 0, 0.08);
-  border-color: rgba(255, 215, 0, 0.25);
+  background: var(--brand-soft) !important;
+  border-color: var(--accent-border, var(--brand-400)) !important;
 }
 
 .lk-gallery-month-title-wrap {
@@ -1978,8 +2058,8 @@
 }
 
 .lk-gallery-month-header.expanded .lk-gallery-month-count {
-  background: rgba(255, 215, 0, 0.18);
-  color: #ffd700;
+  background: var(--brand-soft) !important;
+  color: var(--brand-400) !important;
 }
 
 .lk-gallery-month-expand-btn {
@@ -2001,8 +2081,8 @@
 }
 
 .lk-gallery-month-expand-btn.active {
-  background: rgba(255, 215, 0, 0.15);
-  color: #ffd700;
+  background: var(--brand-soft) !important;
+  color: var(--brand-400) !important;
 }
 
 .lk-gallery-expand-text {
@@ -2023,7 +2103,7 @@
   flex-direction: column;
   animation: lkFadeIn 0.2s ease-out;
   padding-left: 4px;
-  border-left: 2px solid rgba(255, 215, 0, 0.15);
+  border-left: 2px solid var(--brand-glow) !important;
   margin-left: 12px;
 }
 
@@ -2051,6 +2131,78 @@
   padding: 1px 5px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.05);
+}
+
+/* ==========================================================================
+   UNIVERSAL SILKY SMOOTH SCROLLING & APPLE-GRADE SCROLLBARS
+   ========================================================================== */
+
+/* 1. Universal Momentum & Smooth Scroll Behavior Across Entire Extension */
+html,
+body,
+._Shell_ls6w7_1,
+._Pane_ls6w7_16,
+._Scroll_8kz7b_7,
+._Day_8kz7b_15,
+._Body_1mni3_7,
+._Body_r57mc_7,
+._Body_1bafh_53,
+._Log_wc3ja_100,
+.lk-conv-list,
+.lk-room-messages,
+.lk-gallery-filter-bar,
+.lk-quick-friends-tray,
+.lk-gallery-months-container,
+.lk-gallery-month-expanded-days,
+.lk-date-cleaner-card,
+.lk-date-cleaner-body,
+.lk-date-cleaner-modal-overlay {
+  scroll-behavior: smooth !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: contain !important;
+  overscroll-behavior-x: contain !important;
+}
+
+/* 2. Apple iOS Ultra-Sleek Scrollbars */
+::-webkit-scrollbar {
+  width: 5px !important;
+  height: 5px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-radius: 999px !important;
+  border: 1px solid transparent !important;
+  background-clip: padding-box !important;
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.28) !important;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--brand-400) !important;
+  box-shadow: 0 0 8px var(--brand-glow) !important;
+}
+
+/* 3. High Performance Smooth GPU Composite Layers */
+._Scroll_8kz7b_7,
+._Body_1mni3_7,
+._Body_1bafh_53,
+.lk-conv-list,
+.lk-room-messages,
+.lk-gallery-month-section,
+._Cell_8kz7b_50,
+._Card_1bafh_63,
+.lk-msg-row {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
 }
 
 

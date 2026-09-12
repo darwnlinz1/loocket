@@ -172,7 +172,7 @@ assert.ok(uiUpgradeCss.includes('._Tab_te3jl_11._accent_te3jl_27'), 'CSS must st
 assert.ok(uiUpgradeCss.includes('._Tab_te3jl_11._active_te3jl_24'), 'CSS must style active tab pill background');
 assert.ok(uiUpgradeCss.includes('._Label_te3jl_39::after'), 'CSS must render yellow indicator underline under active tab');
 assert.ok(uiUpgradeCss.includes('.lk-gallery-filter-pill.active'), 'CSS must style active pill with gold border');
-assert.ok(uiUpgradeCss.includes('border: 1.5px solid #f59e0b'), 'Active filter pill must have 1.5px gold border');
+assert.ok(uiUpgradeCss.includes('border: 1.5px solid var(--brand-400)') || uiUpgradeCss.includes('border: 1.5px solid #f59e0b'), 'Active filter pill must have 1.5px dynamic accent border');
 console.log('✓ Locket Gold visual polish matching both screenshots verified');
 
 console.log('\n=== ALL DATE RANGE CLEANER & HORIZONTAL SCROLL TESTS PASSED 100%! ===');

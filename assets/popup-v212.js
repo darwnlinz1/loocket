@@ -13885,7 +13885,12 @@ function Ea({
                   B.jsxs("select", {
                     className: "lk-select",
                     value: i.accent || "rose",
-                    onChange: (e) => s({ accent: e.target.value }),
+                    onChange: (e) => {
+                      const next = e.target.value;
+                      s({ accent: next });
+                      document.documentElement.dataset.accent = next;
+                      if (document.body) document.body.dataset.accent = next;
+                    },
                     children: [
                       B.jsx("option", {
                         value: "gold",
@@ -15815,12 +15820,130 @@ function Ga() {
 const lkApplyPrefs = (e) => {
   const t = document.documentElement,
     n = e || {};
+  const accent = n.accent || "rose";
   ((t.dataset.theme = n.theme || "system"),
-    (t.dataset.accent = n.accent || "rose"),
+    (t.dataset.accent = accent),
     (t.dataset.galleryColumns = String(n.galleryColumns || 3)),
     (t.dataset.motion = n.motion || "full"),
     (t.dataset.radius = n.radius || "soft"));
+  if (typeof document !== "undefined" && document.body) {
+    document.body.dataset.accent = accent;
+    document.body.dataset.theme = n.theme || "system";
+  }
 };
+function initUniversalSmoothScroll() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+
+  const isReducedMotion = () => {
+    return (
+      document.documentElement.dataset.motion === "reduced" ||
+      (typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+    );
+  };
+
+  const getScrollParent = (el, isHorizontal) => {
+    let cur = el;
+    while (cur && cur !== document.body && cur !== document.documentElement) {
+      if (cur.nodeType !== 1) break;
+      const style = window.getComputedStyle(cur);
+      if (isHorizontal) {
+        const ox = style.overflowX;
+        if ((ox === "auto" || ox === "scroll") && cur.scrollWidth > cur.clientWidth) {
+          return cur;
+        }
+      } else {
+        const oy = style.overflowY;
+        if ((oy === "auto" || oy === "scroll") && cur.scrollHeight > cur.clientHeight) {
+          return cur;
+        }
+      }
+      cur = cur.parentElement;
+    }
+    return null;
+  };
+
+  const activeAnimations = new WeakMap();
+
+  const smoothScrollTo = (container, delta, isHorizontal) => {
+    const currentScroll = isHorizontal ? container.scrollLeft : container.scrollTop;
+    const maxScroll = isHorizontal
+      ? container.scrollWidth - container.clientWidth
+      : container.scrollHeight - container.clientHeight;
+
+    if (maxScroll <= 0) return;
+
+    let anim = activeAnimations.get(container);
+    if (anim) {
+      cancelAnimationFrame(anim.rafId);
+      anim.target = Math.max(0, Math.min(maxScroll, anim.target + delta));
+    } else {
+      anim = {
+        target: Math.max(0, Math.min(maxScroll, currentScroll + delta)),
+        current: currentScroll,
+        rafId: 0,
+      };
+      activeAnimations.set(container, anim);
+    }
+
+    const friction = 0.84;
+    const springStep = () => {
+      anim.current = isHorizontal ? container.scrollLeft : container.scrollTop;
+      const diff = anim.target - anim.current;
+      if (Math.abs(diff) < 0.5) {
+        if (isHorizontal) {
+          container.scrollLeft = anim.target;
+        } else {
+          container.scrollTop = anim.target;
+        }
+        activeAnimations.delete(container);
+        return;
+      }
+
+      const nextPos = anim.current + diff * (1 - friction);
+      if (isHorizontal) {
+        container.scrollLeft = nextPos;
+      } else {
+        container.scrollTop = nextPos;
+      }
+      anim.rafId = requestAnimationFrame(springStep);
+    };
+
+    anim.rafId = requestAnimationFrame(springStep);
+  };
+
+  window.addEventListener(
+    "wheel",
+    (e) => {
+      if (isReducedMotion()) return;
+      if (e.ctrlKey) return;
+
+      const absY = Math.abs(e.deltaY);
+      const absX = Math.abs(e.deltaX);
+      const isSteppedWheel = e.deltaMode !== 0 || absY >= 25 || absX >= 25;
+
+      if (!isSteppedWheel) return;
+
+      const isHorizontal = absX > absY;
+      const target = getScrollParent(e.target, isHorizontal);
+      if (!target) return;
+
+      const delta = isHorizontal ? e.deltaX * 0.95 : e.deltaY * 0.95;
+      const maxScroll = isHorizontal
+        ? target.scrollWidth - target.clientWidth
+        : target.scrollHeight - target.clientHeight;
+
+      const curPos = isHorizontal ? target.scrollLeft : target.scrollTop;
+      if ((delta < 0 && curPos <= 0) || (delta > 0 && curPos >= maxScroll - 1)) {
+        return;
+      }
+
+      e.preventDefault();
+      smoothScrollTo(target, delta, isHorizontal);
+    },
+    { passive: false }
+  );
+}
+initUniversalSmoothScroll();
 S().then(lkApplyPrefs);
 chrome.storage.onChanged.addListener((e, t) => {
   "local" === t && e.settings && lkApplyPrefs(e.settings.newValue || {});
