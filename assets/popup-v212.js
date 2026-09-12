@@ -12250,11 +12250,15 @@ function Cr({
   A.useEffect(() => {
     for (const t of [1, -1, 2]) {
       const r = e[n + t];
-      if (r)
-        for (const e of [r.thumbnail_url, r.user.avatar]) {
-          if (!e) continue;
-          new Image().src = e;
+      if (r) {
+        const optThumb = r.thumbnail_url
+          ? (optimizeImageUrl(r.thumbnail_url, { width: 500, height: 500, format: "webp", quality: 75 }) || r.thumbnail_url)
+          : null;
+        for (const itemUrl of [optThumb, r.user?.avatar]) {
+          if (!itemUrl) continue;
+          new Image().src = itemUrl;
         }
+      }
     }
   }, [n, e]);
   A.useEffect(() => {
@@ -15223,7 +15227,7 @@ function Xa() {
                     B.jsx("div", {
                       className: "lk-lightbox-photo",
                       style: {
-                        backgroundImage: `url("${activeLightboxMoment.thumbnail_url}")`,
+                        backgroundImage: `url("${optimizeImageUrl(activeLightboxMoment.thumbnail_url, { width: 800, height: 800, format: 'webp', quality: 85 }) || activeLightboxMoment.thumbnail_url}")`,
                       },
                       children:
                         activeLightboxMoment.caption &&
