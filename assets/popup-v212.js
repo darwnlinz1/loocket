@@ -33,7 +33,7 @@ import {
   U as j,
   R as N,
 } from "./moments-v212.js";
-import { looketService, optimizeImageUrl } from "./locket-service.js";
+import { looketService, optimizeImageUrl, optimizeThumbnailUrl, getLqipImageUrl } from "./locket-service.js";
 import { createChatComponent, createChatIcon } from "./chat-component.js";
 const E = {
     "User-Agent": "okhttp/4.12.0",
@@ -12487,7 +12487,7 @@ function Cr({
                             children: B.jsx("div", {
                               className: ur,
                               style: {
-                                backgroundImage: `url("${t.thumbnail_url}")`,
+                                backgroundImage: `url("${optimizeImageUrl(t.thumbnail_url, { width: 500, height: 500, format: "webp", quality: 75 }) || t.thumbnail_url}")`,
                               },
                               children:
                                 !!t.caption &&
@@ -12659,11 +12659,31 @@ function getGalleryObserver() {
 }
 
 function LazyPhotoCell({ item, subIdx, clickIdx, onOpen }) {
-  const [inView, setInView] = A.useState(false);
+  const isInitialBatch = typeof subIdx === "number" && subIdx < 15;
+  const [inView, setInView] = A.useState(() => isInitialBatch);
   const [imgLoaded, setImgLoaded] = A.useState(false);
   const cellRef = A.useRef(null);
+  const imgRef = A.useRef(null);
+
+  const thumbUrl = A.useMemo(() => {
+    if (!item?.thumbnail_url) return "";
+    return optimizeImageUrl(item.thumbnail_url, {
+      width: 180,
+      height: 180,
+      format: "webp",
+      quality: 65,
+    }) || item.thumbnail_url;
+  }, [item?.thumbnail_url]);
+
+  // Check if image is already cached in browser memory (instant 0ms display)
+  A.useEffect(() => {
+    if (imgRef.current && imgRef.current.complete) {
+      setImgLoaded(true);
+    }
+  }, [inView, thumbUrl]);
 
   A.useEffect(() => {
+    if (inView) return;
     const el = cellRef.current;
     if (!el) return;
     const observer = getGalleryObserver();
@@ -12677,7 +12697,7 @@ function LazyPhotoCell({ item, subIdx, clickIdx, onOpen }) {
       galleryObserverCallbacks.delete(el);
       observer.unobserve(el);
     };
-  }, [item.thumbnail_url]);
+  }, [inView, item?.thumbnail_url]);
 
   const authorName = item.user?.username || item.user?.displayName || "Bạn bè";
 
@@ -12691,13 +12711,18 @@ function LazyPhotoCell({ item, subIdx, clickIdx, onOpen }) {
       "aria-label": `Mở khoảnh khắc của ${authorName}`,
       onClick: () => onOpen(clickIdx, item.user?.uid),
       children: [
-        inView && item.thumbnail_url && B.jsx("img", {
-          src: item.thumbnail_url,
+        inView && thumbUrl && B.jsx("img", {
+          ref: imgRef,
+          src: thumbUrl,
           alt: authorName,
           loading: "lazy",
           decoding: "async",
           className: "lk-cell-img",
-          style: { opacity: imgLoaded ? 1 : 0 },
+          style: {
+            opacity: imgLoaded ? 1 : 0,
+            transform: imgLoaded ? "scale(1)" : "scale(1.03)",
+            transition: "opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)",
+          },
           onLoad: () => setImgLoaded(true),
         }),
         B.jsxs("span", {
@@ -12945,11 +12970,11 @@ function Kr({
   }, []);
 
   const [renderedDaysCount, setRenderedDaysCount] = A.useState(15);
-  const [renderedMonthsCount, setRenderedMonthsCount] = A.useState(12);
+  const [renderedMonthsCount, setRenderedMonthsCount] = A.useState(4);
 
   A.useEffect(() => {
     setRenderedDaysCount(15);
-    setRenderedMonthsCount(12);
+    setRenderedMonthsCount(4);
   }, [selectedFilter]);
 
   const visibleDays = A.useMemo(
@@ -14525,8 +14550,13 @@ function Xa() {
       }
     }
   }, [r, s.friends, myUid, e, i, deletedMomentIds]);
+  const isFetchingMomentsRef = A.useRef(false);
   const fetchMoments = A.useCallback(async (targetUid = null) => {
+    if (isFetchingMomentsRef.current) return;
+    isFetchingMomentsRef.current = true;
     try {
+      // Yield to allow UI thread to finish tab switch & render smoothly without jank
+      await new Promise((resolve) => setTimeout(resolve, 30));
       const myId = e?.localId || e?.uid || myUid;
       if (!myId) return;
       const isAutoDeep = appSettings?.autoLoadDeepHistory !== false;
@@ -14554,7 +14584,9 @@ function Xa() {
             };
           });
 
-          const thumbs = updated.map((m) => m.thumbnail_url).filter(Boolean);
+          const thumbs = updated.map((m) =>
+            optimizeImageUrl(m.thumbnail_url, { width: 180, height: 180, format: 'webp', quality: 65 }) || m.thumbnail_url
+          ).filter(Boolean);
           if (thumbs.length > 0) {
             looketService.preloadImages(thumbs.slice(0, 30), 30).catch(() => {});
           }
@@ -14658,7 +14690,9 @@ function Xa() {
             };
           });
 
-          const thumbs = updatedFriends.map((m) => m.thumbnail_url).filter(Boolean);
+          const thumbs = updatedFriends.map((m) =>
+            optimizeImageUrl(m.thumbnail_url, { width: 180, height: 180, format: 'webp', quality: 65 }) || m.thumbnail_url
+          ).filter(Boolean);
           if (thumbs.length > 0) {
             looketService.preloadImages(thumbs.slice(0, 30), 30).catch(() => {});
           }
@@ -14683,6 +14717,8 @@ function Xa() {
       }
     } catch (err) {
       console.warn("Lỗi tải moments history:", err);
+    } finally {
+      isFetchingMomentsRef.current = false;
     }
   }, [e, myUid, s.friends, i, appSettings?.autoLoadDeepHistory]);
   A.useEffect(() => {

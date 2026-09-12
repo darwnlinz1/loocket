@@ -38,11 +38,64 @@ export function generateUUID() {
  * Optimizes image URLs by routing through Fastly CDN Edge Proxy
  * Replaces both firebasestorage.googleapis.com:443 and firebasestorage.googleapis.com
  */
-export function optimizeImageUrl(url) {
+export function optimizeImageUrl(url, options = null) {
   if (!url || typeof url !== 'string') return '';
-  return url
+  let optimized = url
     .replace(/firebasestorage\.googleapis\.com:443/g, LOCKET_CONSTANTS.FASTLY_CDN_HOST)
     .replace(/firebasestorage\.googleapis\.com/g, LOCKET_CONSTANTS.FASTLY_CDN_HOST);
+
+  if (!options || typeof options !== 'object' || Object.keys(options).length === 0) {
+    return optimized;
+  }
+
+  const isCdn = optimized.includes(LOCKET_CONSTANTS.FASTLY_CDN_HOST) || optimized.includes('cdn.locketcamera.com');
+  if (!isCdn) {
+    return optimized;
+  }
+
+  const { width, height, format = 'webp', quality = 65, fit } = options;
+  const parts = [];
+  if (width) parts.push(`width=${encodeURIComponent(width)}`);
+  if (height) parts.push(`height=${encodeURIComponent(height)}`);
+  if (format) parts.push(`format=${encodeURIComponent(format)}`);
+  if (quality) parts.push(`quality=${encodeURIComponent(quality)}`);
+  if (fit) parts.push(`fit=${encodeURIComponent(fit)}`);
+
+  if (parts.length === 0) return optimized;
+
+  let cleanUrl = optimized
+    .replace(/[&?](?:width|height|format|quality|fit)=[^&]*/g, '')
+    .replace(/\?&/, '?')
+    .replace(/\?$/, '');
+
+  const joinChar = cleanUrl.includes('?') ? '&' : '?';
+  return `${cleanUrl}${joinChar}${parts.join('&')}`;
+}
+
+/**
+ * Tạo URL ảnh thumbnail kích thước nhỏ được nén bởi Fastly CDN Edge
+ * Giảm dung lượng từ vài MB xuống còn ~4KB - 8KB WebP, nạp tức thì
+ */
+export function optimizeThumbnailUrl(url, size = 180, quality = 65) {
+  return optimizeImageUrl(url, {
+    width: size,
+    height: size,
+    format: 'webp',
+    quality: quality
+  });
+}
+
+/**
+ * Tạo URL placeholder siêu nhẹ (LQIP - Low Quality Image Placeholder)
+ * ~300 bytes để hiển thị hiệu ứng mờ mịn màng tức thì trước khi ảnh nét tải xong
+ */
+export function getLqipImageUrl(url) {
+  return optimizeImageUrl(url, {
+    width: 24,
+    height: 24,
+    format: 'webp',
+    quality: 20
+  });
 }
 
 /**
@@ -172,6 +225,7 @@ export async function preloadImagesConcurrently(urls, concurrency = 30) {
         if (typeof Image !== 'undefined') {
           return await new Promise((resolve) => {
             const img = new Image();
+            img.decoding = 'async';
             const timer = setTimeout(() => {
               img.onload = null;
               img.onerror = null;
@@ -920,9 +974,11 @@ export class LooketService {
     });
 
     if (preloadAssets && allMoments.length > 0) {
-      // Chỉ preload trước trang đầu tiên (~30 ảnh) để tránh ngốn bộ nhớ với tài khoản 3000+ ảnh,
+      // Chỉ preload trước trang đầu tiên (~30 ảnh) bằng thumbnail WebP nhẹ (~5KB) để nạp tức thì,
       // các ảnh còn lại nạp on-demand khi người dùng lướt tới
-      const thumbs = allMoments.slice(0, 30).map((m) => m.thumbnail_url).filter(Boolean);
+      const thumbs = allMoments.slice(0, 30).map((m) =>
+        optimizeThumbnailUrl(m.thumbnail_url, 180, 65) || m.thumbnail_url
+      ).filter(Boolean);
       preloadImagesConcurrently(thumbs, concurrency).catch(() => {});
     }
 
@@ -976,7 +1032,9 @@ export class LooketService {
     });
 
     if (allFriendMoments.length > 0) {
-      const thumbs = allFriendMoments.slice(0, 30).map((m) => m.thumbnail_url).filter(Boolean);
+      const thumbs = allFriendMoments.slice(0, 30).map((m) =>
+        optimizeThumbnailUrl(m.thumbnail_url, 180, 65) || m.thumbnail_url
+      ).filter(Boolean);
       preloadImagesConcurrently(thumbs, concurrency).catch(() => {});
     }
 

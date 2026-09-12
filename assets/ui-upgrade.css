@@ -1300,11 +1300,11 @@ body[data-accent="orange"] {
   backdrop-filter: blur(8px);
 }
 
-/* Library Viewport Skeleton & Instant Load Cells */
 .lk-cell-skeleton {
   background-color: rgba(255, 255, 255, 0.05) !important;
   position: relative;
   overflow: hidden;
+  will-change: transform, opacity;
 }
 
 .lk-cell-skeleton::after {
@@ -1319,6 +1319,8 @@ body[data-accent="orange"] {
     transparent 100%
   );
   animation: lk-skeleton-shimmer 1.6s infinite ease-in-out;
+  pointer-events: none;
+  will-change: transform;
 }
 
 @keyframes lk-skeleton-shimmer {
@@ -1337,6 +1339,9 @@ body[data-accent="orange"] {
               opacity 0.25s ease !important;
   will-change: transform !important;
   border-radius: 16px !important;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 110px;
+  transform: translateZ(0);
 }
 
 .lk-cell-img {
@@ -1999,6 +2004,8 @@ body[data-accent="orange"] {
   flex-direction: column;
   margin-bottom: 20px;
   position: relative;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 300px;
 }
 
 .lk-gallery-month-header {
@@ -2105,6 +2112,8 @@ body[data-accent="orange"] {
   padding-left: 4px;
   border-left: 2px solid var(--brand-glow) !important;
   margin-left: 12px;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 240px;
 }
 
 .lk-gallery-day-header {
