@@ -1269,9 +1269,56 @@
   z-index: 1;
 }
 
+/* Delicate Apple iOS style photo hover overlay */
 ._Overlay_8kz7b_64 {
-  position: relative;
-  z-index: 2;
+  position: absolute !important;
+  inset: auto 0 0 0 !important;
+  height: 48% !important;
+  padding: 0 10px 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-end !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.35) 45%, rgba(0, 0, 0, 0) 100%) !important;
+  border-bottom-left-radius: inherit !important;
+  border-bottom-right-radius: inherit !important;
+  opacity: 0 !important;
+  transform: translateY(4px) !important;
+  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  pointer-events: none !important;
+  z-index: 3 !important;
+  box-sizing: border-box !important;
+}
+
+.lk-gallery-cell:hover ._Overlay_8kz7b_64,
+._Cell_8kz7b_50:hover ._Overlay_8kz7b_64 {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+._Who_8kz7b_85 {
+  font-family: var(--font-display), -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
+  color: #ffffff !important;
+  line-height: 1.25 !important;
+  max-width: 100% !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 2px 6px rgba(0, 0, 0, 0.5) !important;
+}
+
+._When_8kz7b_95 {
+  font-family: var(--font-body), -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
+  font-size: 9.5px !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  line-height: 1.2 !important;
+  margin-top: 1px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
 }
 
 .lk-gallery-cell:hover {
