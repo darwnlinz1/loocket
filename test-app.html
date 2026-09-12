@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="/assets/icon-source.svg">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>loocket v2.4.0 (Dev & Test Preview)</title>
+    <link rel="stylesheet" crossorigin href="/assets/style-v212.css">
+    <link rel="stylesheet" crossorigin href="/assets/editor.css">
+    <link rel="stylesheet" crossorigin href="/assets/ui-upgrade.css">
+
+    <!-- Mock Chrome Extension Environment for Web Preview / Testing -->
+    <script>
+      const mockStorage = {
+        token: 'mock_valid_id_token',
+        refreshToken: 'mock_refresh_token',
+        user: {
+          localId: 'my_test_uid',
+          email: 'testuser@loocket.app',
+          displayName: 'Anh Thư'
+        },
+        settings: {
+          theme: 'system',
+          accent: 'rose',
+          galleryColumns: 3,
+          motion: 'full',
+          radius: 'soft',
+          desktopNotifications: false
+        },
+        unReadMoments: 0,
+        friends: [
+          {
+            uid: 'friend_linh',
+            displayName: 'Phương Linh',
+            username: 'phuonglinh',
+            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+          },
+          {
+            uid: 'friend_nam',
+            displayName: 'Hoàng Nam',
+            username: 'hoangnam',
+            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
+          },
+          {
+            uid: 'friend_mai',
+            displayName: 'Mai Anh',
+            username: 'maianh',
+            avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80'
+          }
+        ],
+        moments: [
+          {
+            id: 'm1',
+            momentUid: 'm1',
+            canonical_uid: 'm1',
+            md5: 'md5_1',
+            authorUid: 'friend_linh',
+            user: {
+              uid: 'friend_linh',
+              username: 'Phương Linh',
+              avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+            },
+            caption: 'Cà phê chiều thu Hà Nội ☕️',
+            thumbnail_url: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800&auto=format&fit=crop&q=80',
+            seconds: Date.now() - 15 * 60 * 1000
+          },
+          {
+            id: 'm2',
+            momentUid: 'm2',
+            canonical_uid: 'm2',
+            md5: 'md5_2',
+            authorUid: 'friend_nam',
+            user: {
+              uid: 'friend_nam',
+              username: 'Hoàng Nam',
+              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
+            },
+            caption: 'Hoàng hôn Hồ Tây đẹp quá anh em',
+            thumbnail_url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80',
+            seconds: Date.now() - 2 * 3600 * 1000
+          },
+          {
+            id: 'm3_self',
+            momentUid: 'm3_self',
+            canonical_uid: 'm3_self',
+            md5: 'md5_3_self',
+            authorUid: 'my_test_uid',
+            user: {
+              uid: 'my_test_uid',
+              username: 'Anh Thư',
+              avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'
+            },
+            caption: 'Khoảnh khắc kỷ niệm của tôi ✨',
+            thumbnail_url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&auto=format&fit=crop&q=80',
+            seconds: Date.now() - 24 * 3600 * 1000
+          }
+        ]
+      };
+
+      const listeners = new Set();
+      const storageListeners = new Set();
+
+      window.chrome = {
+        runtime: {
+          getURL: (path) => path,
+          sendMessage: (msg, cb) => {
+            listeners.forEach((l) => l(msg));
+            if (cb) cb();
+          },
+          onMessage: {
+            addListener: (l) => listeners.add(l),
+            removeListener: (l) => listeners.delete(l)
+          },
+          lastError: null
+        },
+        storage: {
+          local: {
+            get: (keys, cb) => {
+              const res = {};
+              if (Array.isArray(keys)) {
+                keys.forEach((k) => (res[k] = mockStorage[k]));
+              } else if (typeof keys === 'string') {
+                res[keys] = mockStorage[keys];
+              } else if (keys && typeof keys === 'object') {
+                Object.keys(keys).forEach((k) => (res[k] = mockStorage[k] ?? keys[k]));
+              } else {
+                Object.assign(res, mockStorage);
+              }
+              setTimeout(() => cb && cb(res), 0);
+            },
+            set: (items, cb) => {
+              Object.assign(mockStorage, items);
+              storageListeners.forEach((l) => l(items, 'local'));
+              setTimeout(() => cb && cb(), 0);
+            },
+            remove: (keys, cb) => {
+              const arr = Array.isArray(keys) ? keys : [keys];
+              arr.forEach((k) => delete mockStorage[k]);
+              setTimeout(() => cb && cb(), 0);
+            }
+          },
+          onChanged: {
+            addListener: (l) => storageListeners.add(l),
+            removeListener: (l) => storageListeners.delete(l)
+          }
+        },
+        action: {
+          setBadgeText: () => Promise.resolve(),
+          setBadgeBackgroundColor: () => Promise.resolve()
+        },
+        notifications: {
+          create: (opts, cb) => {
+            console.log('[Mock Notification]:', opts);
+            if (cb) cb('mock_id');
+          }
+        },
+        downloads: {
+          download: (opts) => {
+            window.open(opts.url, '_blank');
+          }
+        }
+      };
+    </script>
+    <script type="module" crossorigin src="/assets/popup-v212.js"></script>
+    <script type="module" crossorigin src="/assets/editor.js"></script>
+  </head>
+  <body style="margin: 0; padding: 20px; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+    <div style="box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.1); border-radius: 24px; overflow: hidden; width: 400px; height: 600px; background: #0a0a0b;">
+      <div id="loocket_app"></div>
+    </div>
+  </body>
+</html>

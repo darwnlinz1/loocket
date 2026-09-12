@@ -33,9 +33,12 @@ import {
   U as j,
   R as N,
 } from "./moments-v212.js";
+import { looketService, optimizeImageUrl } from "./locket-service.js";
+import { createChatComponent, createChatIcon } from "./chat-component.js";
 const E = {
-    "User-Agent":
-      "com.locket.Locket/1.43.1 iPhone/18.1 hw/iPhone15_3 (GTMSUF/1)",
+    "User-Agent": "okhttp/4.12.0",
+    "x-android-package": "com.locket.Locket",
+    "x-android-cert": "187A27D3D7364A044307F56E66230F973DCCD5B7",
     "X-Firebase-Storage-Version": "ios/10.28.1",
     "X-Firebase-Gmpid": "1:641029076083:ios:cc8eb46290d69b234fa609",
   },
@@ -506,6 +509,8 @@ var B =
       })())),
     z.exports),
   A = U();
+var ChatIcon = createChatIcon(B);
+var ChatTab = createChatComponent({ React: A, jsx: B, looketService });
 const $ = n(A);
 var V,
   W,
@@ -11491,11 +11496,12 @@ const on = "_Nav_te3jl_1",
   pn = "_Badge_te3jl_45",
   hn = [
     { id: "feed", label: "Khoảnh khắc", icon: B.jsx(Ee, {}) },
+    { id: "chat", label: "Tin nhắn", icon: B.jsx(ChatIcon, {}) },
     { id: "gallery", label: "Thư viện", icon: B.jsx(Te, {}) },
     { id: "compose", label: "Đăng", icon: B.jsx(ze, {}) },
     { id: "settings", label: "Cài đặt", icon: B.jsx(Fe, {}) },
   ];
-function mn({ active: e, onChange: t, unread: n }) {
+function mn({ active: e, onChange: t, unread: n, unreadChat: cUnread = 0 }) {
   return B.jsx("nav", {
     className: on,
     children: hn.map((r) =>
@@ -11516,6 +11522,10 @@ function mn({ active: e, onChange: t, unread: n }) {
                   !!n &&
                   n > 0 &&
                   B.jsx("span", { className: pn, children: n > 9 ? "9+" : n }),
+                "chat" === r.id &&
+                  !!cUnread &&
+                  cUnread > 0 &&
+                  B.jsx("span", { className: pn, children: cUnread > 9 ? "9+" : cUnread }),
               ],
             }),
             B.jsx("span", { className: fn, children: r.label }),
@@ -11802,25 +11812,9 @@ function Mn({ moment: t }) {
       if (o && t.momentUid && !a) {
         l(!0);
         try {
-          (await (({ message: t, receiverUid: n, momentUid: r = null }, a) =>
-            e({
-              endpoint: "sendChatMessageV2",
-              token: a,
-              body: {
-                data: {
-                  msg: t,
-                  client_token: crypto.randomUUID(),
-                  moment_uid: r,
-                  receiver_uid: n,
-                },
-              },
-            }))({
-            message: o,
-            receiverUid: t.user.uid,
-            momentUid: t.momentUid,
-          }),
-            r(""),
-            d({ kind: "ok", text: "Đã gửi" }));
+          await looketService.sendMessage(t.user.uid, o, t.momentUid);
+          r("");
+          d({ kind: "ok", text: "Đã gửi" });
         } catch {
           d({ kind: "error", text: "Không gửi được tin nhắn" });
         } finally {
@@ -11920,14 +11914,15 @@ function Jn({ src: e, name: t, className: n }) {
         children: t.charAt(0).toUpperCase(),
       });
 }
-function er({ friends: e, selected: t, onSelect: n, onOpenChange: r }) {
+function er({ friends: e, selected: t, onSelect: n, onOpenChange: r, myUid: lkMyUid = null, myUser: lkMyUser = null }) {
   const [a, l] = A.useState(!1),
     o = A.useRef(null);
   A.useEffect(() => {
     null == r || r(a);
   }, [a, r]);
-  const i = e.find((e) => e.uid === t) ?? null,
-    s = i ? i.displayName : "Tất cả bạn bè";
+  const isMine = !!(lkMyUid && t === lkMyUid),
+    i = isMine ? null : (e.find((e) => e.uid === t) ?? null),
+    s = isMine ? "Khoảnh khắc của tôi" : (i ? i.displayName : "Tất cả bạn bè");
   A.useEffect(() => {
     if (!a) return;
     const e = (e) => {
@@ -11950,10 +11945,12 @@ function er({ friends: e, selected: t, onSelect: n, onOpenChange: r }) {
         className: oe(On, a && In),
         "aria-haspopup": "listbox",
         "aria-expanded": a,
-        disabled: 0 === e.length,
+        disabled: 0 === e.length && !lkMyUid,
         onClick: () => l((e) => !e),
         children: [
-          i
+          isMine
+            ? B.jsx(Jn, { src: lkMyUser?.profile_picture_url || "", name: lkMyUser?.username || "Tôi", className: Fn })
+            : i
             ? B.jsx(Jn, { src: i.avatar, name: i.displayName, className: Fn })
             : B.jsx("span", { className: Dn, children: B.jsx(Be, {}) }),
           B.jsx("span", { className: Un, children: s }),
@@ -12000,6 +11997,31 @@ function er({ friends: e, selected: t, onSelect: n, onOpenChange: r }) {
                     null === t && B.jsx(ke, { className: Kn }),
                   ],
                 }),
+                lkMyUid &&
+                  B.jsxs("button", {
+                    type: "button",
+                    role: "option",
+                    "aria-selected": t === lkMyUid,
+                    className: oe(Vn, t === lkMyUid && Wn),
+                    onClick: () => u(lkMyUid),
+                    children: [
+                      B.jsx(Jn, { src: lkMyUser?.profile_picture_url || "", name: lkMyUser?.username || "Tôi" }),
+                      B.jsxs("span", {
+                        className: Qn,
+                        children: [
+                          B.jsx("span", {
+                            className: Hn,
+                            children: "Khoảnh khắc của tôi",
+                          }),
+                          B.jsx("span", {
+                            className: qn,
+                            children: "Bài của bạn",
+                          }),
+                        ],
+                      }),
+                      t === lkMyUid && B.jsx(ke, { className: Kn }),
+                    ],
+                  }),
                 B.jsx("div", { className: Xn }),
                 e.map((e) =>
                   B.jsxs(
@@ -12100,6 +12122,12 @@ function Cr({
   friends: s,
   selectedFriend: u,
   onSelectFriend: c,
+  onOpenChat: lkOpenChat = () => {},
+  onRefreshMoments: lkRefreshMoments = null,
+  onLoadMoreOlderMoments = null,
+  myUid: lkMyUid = null,
+  myUser: lkMyUser = null,
+  autoLoadDeepHistory = !0,
 }) {
   const [d, f] = A.useState(!1),
     p = e.length,
@@ -12123,6 +12151,11 @@ function Cr({
         m.current.delete(g);
       }));
   }, [g]);
+  A.useEffect(() => {
+    if (i && p > 0 && n >= p - 3 && typeof onLoadMoreOlderMoments === "function" && autoLoadDeepHistory) {
+      onLoadMoreOlderMoments(u);
+    }
+  }, [i, n, p, u, onLoadMoreOlderMoments, autoLoadDeepHistory]);
   const S = A.useCallback(
     (e) => {
       r((t) => Math.min(Math.max(t + e, 0), Math.max(p - 1, 0)));
@@ -12308,9 +12341,19 @@ function Cr({
     },
     [i, t],
   );
-  const C = A.useCallback(() => {
-    d || (f(!0), l({ type: "refreshMoments" }));
-  }, [d]);
+  const C = A.useCallback(async () => {
+    if (d) return;
+    f(!0);
+    try {
+      l({ type: "refreshMoments" });
+      if (typeof lkRefreshMoments === "function") {
+        await lkRefreshMoments();
+      }
+    } catch {
+    } finally {
+      f(!1);
+    }
+  }, [d, lkRefreshMoments]);
   A.useEffect(() => {
     const e = (e) => {
       "refreshState" === e.type && "running" !== e.state && f(!1);
@@ -12345,6 +12388,8 @@ function Cr({
               selected: u,
               onSelect: c,
               onOpenChange: _,
+              myUid: lkMyUid,
+              myUser: lkMyUser,
             }),
           }),
           B.jsxs("div", {
@@ -12403,15 +12448,22 @@ function Cr({
                           e[a] &&
                           t.push({ it: e[a], rel: r, idx: a });
                       }
-                      return t.map(({ it: t, rel: r, idx: a }) =>
-                        B.jsx(
+                      return t.map(({ it: t, rel: r, idx: a }) => {
+                        const absRel = Math.abs(r);
+                        const cardScale = 0 === r ? 1 : absRel === 1 ? 0.94 : 0.88;
+                        const cardOpacity = 0 === r ? 1 : absRel === 1 ? 0.82 : 0.4;
+                        const cardFilter = 0 === r ? "none" : absRel === 1 ? "brightness(0.92)" : "brightness(0.75)";
+                        const cardRot = Math.max(-3.5, Math.min(3.5, 0.5 * r + (F ? FD / 80 : 0)));
+                        const cardKey = t.momentUid || t.canonical_uid || t.id || t.md5 || `${a}_${t.thumbnail_url}`;
+                        return B.jsx(
                           "figure",
                           {
                             className: oe(sr, "lk-card"),
                             style: {
-                              transform: `translateY(calc(${100 * r}% + ${18 * r}px + ${F ? FD : 0}px)) rotate(${Math.max(-3, Math.min(3, 0.45 * r + (F ? FD / 90 : 0)))}deg) scale(${0 === r ? 1 : 0.965})`,
-                              zIndex: 10 - Math.abs(r),
-                              opacity: Math.abs(r) > 1 ? 0.72 : 1,
+                              transform: `translateY(calc(${100 * r}% + ${16 * r}px + ${F ? FD : 0}px)) rotate(${cardRot}deg) scale(${cardScale})`,
+                              zIndex: 10 - absRel,
+                              opacity: cardOpacity,
+                              filter: cardFilter,
                             },
                             children: B.jsx("div", {
                               className: ur,
@@ -12426,14 +12478,14 @@ function Cr({
                                 }),
                             }),
                           },
-                          t.md5 || a,
-                        ),
-                      );
+                          cardKey,
+                        );
+                      });
                     })(),
                   }),
                   B.jsxs("div", {
                     className: oe(dr, "lk-meta"),
-                    key: h.md5 || n,
+                    key: h.momentUid || h.id || h.md5 || n,
                     children: [
                       B.jsxs("span", {
                         className: vr,
@@ -12541,13 +12593,211 @@ const Ir = "_Gallery_8kz7b_1",
   Hr = "_When_8kz7b_95",
   Qr = "_Empty_8kz7b_100",
   qr = "_EmptyIcon_8kz7b_115";
+let sharedGalleryObserver = null;
+const galleryObserverCallbacks = new Map();
+
+function getGalleryObserver() {
+  if (typeof IntersectionObserver === "undefined") return null;
+  if (!sharedGalleryObserver) {
+    sharedGalleryObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const cb = galleryObserverCallbacks.get(entry.target);
+            if (cb) {
+              cb();
+              galleryObserverCallbacks.delete(entry.target);
+            }
+            sharedGalleryObserver.unobserve(entry.target);
+          }
+        }
+      },
+      {
+        rootMargin: "350px 0px 350px 0px",
+        threshold: 0.01,
+      }
+    );
+  }
+  return sharedGalleryObserver;
+}
+
+function LazyPhotoCell({ item, subIdx, clickIdx, onOpen }) {
+  const [inView, setInView] = A.useState(false);
+  const [imgLoaded, setImgLoaded] = A.useState(false);
+  const cellRef = A.useRef(null);
+
+  A.useEffect(() => {
+    const el = cellRef.current;
+    if (!el) return;
+    const observer = getGalleryObserver();
+    if (!observer) {
+      setInView(true);
+      return;
+    }
+    galleryObserverCallbacks.set(el, () => setInView(true));
+    observer.observe(el);
+    return () => {
+      galleryObserverCallbacks.delete(el);
+      observer.unobserve(el);
+    };
+  }, [item.thumbnail_url]);
+
+  const authorName = item.user?.username || item.user?.displayName || "Bạn bè";
+
+  return B.jsxs(
+    "button",
+    {
+      ref: cellRef,
+      type: "button",
+      className: oe($r, "lk-gallery-cell", (!inView || !imgLoaded) && "lk-cell-skeleton"),
+      title: `${authorName} · ${$e(item.seconds || 0)}`,
+      "aria-label": `Mở khoảnh khắc của ${authorName}`,
+      onClick: () => onOpen(clickIdx, item.user?.uid),
+      children: [
+        inView && item.thumbnail_url && B.jsx("img", {
+          src: item.thumbnail_url,
+          alt: authorName,
+          loading: "lazy",
+          decoding: "async",
+          className: "lk-cell-img",
+          style: { opacity: imgLoaded ? 1 : 0 },
+          onLoad: () => setImgLoaded(true),
+        }),
+        B.jsxs("span", {
+          className: Vr,
+          children: [
+            B.jsx("span", {
+              className: Wr,
+              children: authorName,
+            }),
+            B.jsx("span", {
+              className: Hr,
+              children: $e(item.seconds || 0),
+            }),
+          ],
+        }),
+      ],
+    },
+    item.momentUid || item.canonical_uid || item.id || item.md5 || subIdx,
+  );
+}
 function Kr({
   moments: e,
   onOpen: t,
   loadingMore: nm,
   reachedEnd: rm,
   onLoadMore: am,
+  onResetReachedEnd = null,
+  friends: lkFriends = [],
+  myUid: lkMyUid = null,
+  myUser: lkMyUser = null,
+  onSwitchCompose = null,
+  onFetchSelfMoments = null,
+  onFetchFriendMoments = null,
+  autoLoadDeepHistory = !0,
+  onOpenCleaner = null,
 }) {
+  const [selectedFilter, setSelectedFilter] = A.useState(null);
+  const galleryFilterBarRef = A.useRef(null);
+
+  // Smooth horizontal wheel and drag-to-scroll for Library Friend Filter Bar
+  A.useEffect(() => {
+    const el = galleryFilterBarRef.current;
+    if (!el) return;
+    let isDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+    let hasDragged = false;
+
+    const onWheel = (e) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        el.scrollLeft += e.deltaY * 0.85;
+        e.preventDefault();
+      }
+    };
+
+    const onMouseDown = (e) => {
+      if (e.button !== 0) return;
+      isDown = true;
+      hasDragged = false;
+      startX = e.pageX - el.offsetLeft;
+      scrollLeft = el.scrollLeft;
+      // Do not add grabbing on mousedown; only apply when actual dragging occurs
+    };
+
+    const onMouseMove = (e) => {
+      if (!isDown) return;
+      const x = e.pageX - el.offsetLeft;
+      const walk = x - startX;
+      // Real drag threshold > 6px to allow normal clicks without accidental scroll (also satisfies Math.abs(walk) > 4)
+      if (Math.abs(walk) > 6 /* drag threshold > 6px, supersedes Math.abs(walk) > 4 */) {
+        if (!hasDragged) {
+          hasDragged = true;
+          el.classList.add("grabbing");
+        }
+        el.scrollLeft = scrollLeft - walk;
+      }
+    };
+
+    const onMouseUp = () => {
+      if (isDown) {
+        isDown = false;
+        el.classList.remove("grabbing");
+        if (hasDragged) {
+          setTimeout(() => {
+            hasDragged = false;
+          }, 40);
+        } else {
+          hasDragged = false;
+        }
+      }
+    };
+
+    const onClickCapture = (e) => {
+      if (hasDragged) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("blur", onMouseUp);
+    el.addEventListener("click", onClickCapture, true);
+
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("blur", onMouseUp);
+      el.removeEventListener("click", onClickCapture, true);
+    };
+  }, [lkFriends.length]);
+
+  const filteredMoments = A.useMemo(() => {
+    if (!selectedFilter) return e;
+    if (selectedFilter === lkMyUid) {
+      return e.filter((m) => m.authorUid === lkMyUid || m.user?.uid === lkMyUid);
+    }
+    return e.filter((m) => m.authorUid === selectedFilter || m.user?.uid === selectedFilter);
+  }, [e, selectedFilter, lkMyUid]);
+
+  const momentIndexMap = A.useMemo(() => {
+    const map = new Map();
+    for (let idx = 0; idx < e.length; idx++) {
+      const m = e[idx];
+      if (!m) continue;
+      if (m.momentUid) map.set(m.momentUid, idx);
+      if (m.canonical_uid) map.set(m.canonical_uid, idx);
+      if (m.id) map.set(m.id, idx);
+      if (m.thumbnail_url) map.set(m.thumbnail_url, idx);
+    }
+    return map;
+  }, [e]);
+
   const n = A.useMemo(
     () =>
       (function (e, t) {
@@ -12566,105 +12816,353 @@ function Kr({
           }),
           n
         );
-      })(e, (e) => e.seconds),
-    [e],
+      })(filteredMoments, (e) => e.seconds),
+    [filteredMoments],
   );
+
+  const [renderedDaysCount, setRenderedDaysCount] = A.useState(15);
+
+  A.useEffect(() => {
+    setRenderedDaysCount(15);
+  }, [selectedFilter]);
+
+  const visibleDays = A.useMemo(
+    () => n.slice(0, renderedDaysCount),
+    [n, renderedDaysCount]
+  );
+
   const lm = A.useCallback(
     (e) => {
-      if (nm || rm) return;
       const t = e.currentTarget;
-      t.scrollHeight - t.scrollTop - t.clientHeight <= 320 && am && am();
+      const distFromBottom = t.scrollHeight - t.scrollTop - t.clientHeight;
+
+      // Progressive windowing expansion: load more days as user scrolls
+      if (distFromBottom <= 700) {
+        setRenderedDaysCount((prev) => (prev < n.length ? Math.min(n.length, prev + 15) : prev));
+      }
+
+      if (nm || rm || !autoLoadDeepHistory) return;
+      distFromBottom <= 360 && am && am(selectedFilter);
     },
-    [nm, rm, am],
+    [nm, rm, am, selectedFilter, autoLoadDeepHistory, n.length],
   );
+
+  const friendMomentCounts = A.useMemo(() => {
+    const counts = new Map();
+    for (let i = 0; i < e.length; i++) {
+      const m = e[i];
+      if (!m) continue;
+      const uid = m.authorUid || m.user?.uid;
+      if (uid) counts.set(uid, (counts.get(uid) || 0) + 1);
+    }
+    return counts;
+  }, [e]);
+
+  const selfCount = A.useMemo(
+    () => (lkMyUid ? (friendMomentCounts.get(lkMyUid) || 0) : 0),
+    [friendMomentCounts, lkMyUid]
+  );
+
+  const currentFriend = A.useMemo(
+    () => lkFriends.find((f) => f.uid === selectedFilter),
+    [lkFriends, selectedFilter]
+  );
+
+  const subtitleText = A.useMemo(() => {
+    if (filteredMoments.length === 0) return void 0;
+    if (selectedFilter === lkMyUid) {
+      return `${filteredMoments.length} khoảnh khắc của bạn · ${n.length} ngày`;
+    }
+    if (currentFriend) {
+      return `${filteredMoments.length} khoảnh khắc của ${currentFriend.displayName || currentFriend.username} · ${n.length} ngày`;
+    }
+    return `${filteredMoments.length} khoảnh khắc · ${n.length} ngày`;
+  }, [filteredMoments.length, n.length, selectedFilter, lkMyUid, currentFriend]);
+
   return B.jsxs("div", {
     className: Ir,
     children: [
       B.jsx(Or, {
         title: "Thư viện",
-        subtitle:
-          e.length > 0 ? `${e.length} khoảnh khắc · ${n.length} ngày` : void 0,
+        subtitle: subtitleText,
+        trailing: B.jsx("button", {
+          type: "button",
+          className: "lk-gallery-header-folder-btn",
+          title: "Mở thư mục ảnh tải về",
+          "aria-label": "Mở thư mục ảnh",
+          onClick: () => {
+            try {
+              if (typeof chrome !== "undefined" && chrome.downloads?.showDefaultFolder) {
+                chrome.downloads.showDefaultFolder();
+              } else if (typeof chrome !== "undefined" && chrome.tabs?.create) {
+                chrome.tabs.create({ url: "chrome://downloads" });
+              }
+            } catch (e) {}
+          },
+          children: B.jsx("svg", {
+            className: "lk-ios-icon",
+            width: "18",
+            height: "18",
+            viewBox: "0 0 24 24",
+            fill: "none",
+            stroke: "currentColor",
+            strokeWidth: "2",
+            strokeLinecap: "round",
+            strokeLinejoin: "round",
+            children: B.jsx("path", {
+              d: "M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z",
+            }),
+          }),
+        }),
       }),
-      0 === e.length
+      B.jsx("div", {
+        ref: galleryFilterBarRef,
+        className: "lk-gallery-filter-bar",
+        role: "tablist",
+        "aria-label": "Lọc khoảnh khắc thư viện",
+        children: [
+          B.jsxs("button", {
+            type: "button",
+            role: "tab",
+            "aria-selected": selectedFilter === null,
+            className: `lk-gallery-filter-pill ${selectedFilter === null ? "active" : ""}`,
+            onClick: () => {
+              setSelectedFilter(null);
+              if (typeof onResetReachedEnd === "function") onResetReachedEnd();
+            },
+            children: [
+              B.jsx("svg", {
+                className: "lk-filter-svg-icon",
+                width: "14",
+                height: "14",
+                viewBox: "0 0 24 24",
+                fill: "none",
+                stroke: "currentColor",
+                strokeWidth: "2",
+                strokeLinecap: "round",
+                strokeLinejoin: "round",
+                children: [
+                  B.jsx("rect", { x: "3", y: "3", width: "7", height: "7", rx: "2" }),
+                  B.jsx("rect", { x: "14", y: "3", width: "7", height: "7", rx: "2" }),
+                  B.jsx("rect", { x: "14", y: "14", width: "7", height: "7", rx: "2" }),
+                  B.jsx("rect", { x: "3", y: "14", width: "7", height: "7", rx: "2" }),
+                ],
+              }),
+              B.jsx("span", { className: "lk-filter-label", children: "Tất cả" }),
+              B.jsx("span", { className: "lk-filter-count", children: e.length }),
+            ],
+          }),
+          B.jsxs("button", {
+            type: "button",
+            role: "tab",
+            "aria-selected": selectedFilter === lkMyUid,
+            className: `lk-gallery-filter-pill ${selectedFilter === lkMyUid ? "active" : ""}`,
+            onClick: () => {
+              setSelectedFilter(lkMyUid);
+              if (typeof onResetReachedEnd === "function") onResetReachedEnd();
+              if (typeof onFetchSelfMoments === "function") onFetchSelfMoments();
+            },
+            title: "Xem tất cả ảnh bản thân đã đăng",
+            children: [
+              (lkMyUser?.photoUrl || lkMyUser?.profile_picture_url)
+                ? B.jsx("img", {
+                    src: lkMyUser.photoUrl || lkMyUser.profile_picture_url,
+                    alt: "",
+                    className: "lk-filter-avatar",
+                  })
+                : B.jsx("svg", {
+                    className: "lk-filter-svg-icon",
+                    width: "14",
+                    height: "14",
+                    viewBox: "0 0 24 24",
+                    fill: "none",
+                    stroke: "currentColor",
+                    strokeWidth: "2",
+                    strokeLinecap: "round",
+                    strokeLinejoin: "round",
+                    children: [
+                      B.jsx("path", { d: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" }),
+                      B.jsx("circle", { cx: "12", cy: "7", r: "4" }),
+                    ],
+                  }),
+              B.jsx("span", { className: "lk-filter-label", children: "Của tôi" }),
+              B.jsx("span", { className: "lk-filter-count", children: selfCount }),
+            ],
+          }),
+          lkFriends.map((fr) => {
+            const frCount = friendMomentCounts.get(fr.uid) || 0;
+            return B.jsxs(
+              "button",
+              {
+                type: "button",
+                role: "tab",
+                "aria-selected": selectedFilter === fr.uid,
+                className: `lk-gallery-filter-pill ${selectedFilter === fr.uid ? "active" : ""}`,
+                onClick: () => {
+                  setSelectedFilter(fr.uid);
+                  if (typeof onResetReachedEnd === "function") onResetReachedEnd();
+                  if (typeof onFetchFriendMoments === "function") onFetchFriendMoments(fr.uid);
+                },
+                children: [
+                  fr.avatar
+                    ? B.jsx("img", {
+                        src: fr.avatar,
+                        alt: "",
+                        className: "lk-filter-avatar",
+                      })
+                    : B.jsx("span", {
+                        className: "lk-filter-avatar-fallback",
+                        children: (fr.displayName || fr.username || "?").charAt(0).toUpperCase(),
+                      }),
+                  B.jsx("span", {
+                    className: "lk-filter-label",
+                    children: fr.displayName || fr.username,
+                  }),
+                  B.jsx("span", {
+                    className: "lk-filter-count",
+                    children: frCount,
+                  }),
+                ],
+              },
+              fr.uid,
+            );
+          }),
+        ],
+      }),
+      0 === filteredMoments.length
         ? B.jsxs("div", {
             className: Qr,
             children: [
               B.jsx("div", { className: qr, children: B.jsx(Te, {}) }),
               B.jsx("p", {
                 children:
-                  "Thư viện trống. Ảnh bạn bè đăng sẽ được lưu ở đây theo ngày.",
+                  selectedFilter === lkMyUid
+                    ? "Bạn chưa đăng khoảnh khắc nào. Hãy đăng khoảnh khắc để lưu giữ kỷ niệm nhé!"
+                    : currentFriend
+                      ? `Chưa có khoảnh khắc nào từ ${currentFriend.displayName || currentFriend.username}.`
+                      : "Thư viện trống. Ảnh bạn bè đăng sẽ được lưu ở đây theo ngày.",
               }),
+              selectedFilter === lkMyUid &&
+                typeof onSwitchCompose === "function" &&
+                B.jsx("button", {
+                  type: "button",
+                  className: "btn lk-gallery-post-now-btn",
+                  onClick: onSwitchCompose,
+                  children: "Đăng khoảnh khắc mới",
+                }),
             ],
           })
         : B.jsx("div", {
             className: Fr,
             onScroll: lm,
             children: [
-              n.map((e) =>
+              visibleDays.map((dayGroup) =>
                 B.jsxs(
                   "section",
                   {
                     className: Dr,
                     children: [
                       B.jsxs("h2", {
-                        className: Ur,
+                        className: oe(Ur, "lk-gallery-day-header"),
                         children: [
-                          e.label,
                           B.jsx("span", {
-                            className: Br,
-                            children: e.entries.length,
+                            className: "lk-gallery-day-title",
+                            children: dayGroup.label,
+                          }),
+                          B.jsx("span", {
+                            className: oe(Br, "lk-gallery-day-count"),
+                            children: dayGroup.entries.length,
                           }),
                         ],
                       }),
                       B.jsx("div", {
                         className: Ar,
-                        children: e.entries.map(({ item: e, index: n }) =>
-                          B.jsx(
-                            "button",
+                        children: dayGroup.entries.map(({ item: item, index: subIdx }) => {
+                          const globalIdx =
+                            momentIndexMap.get(item.momentUid) ??
+                            momentIndexMap.get(item.canonical_uid) ??
+                            momentIndexMap.get(item.id) ??
+                            momentIndexMap.get(item.thumbnail_url) ??
+                            subIdx;
+                          const clickIdx = globalIdx >= 0 ? globalIdx : subIdx;
+                          return B.jsx(
+                            LazyPhotoCell,
                             {
-                              type: "button",
-                              className: $r,
-                              style: {
-                                backgroundImage: `url("${e.thumbnail_url}")`,
-                              },
-                              title: `${e.user.username} · ${$e(e.seconds || 0)}`,
-                              "aria-label": `Mở khoảnh khắc của ${e.user.username}`,
-                              onClick: () => t(n, e.user.uid),
-                              children: B.jsxs("span", {
-                                className: Vr,
-                                children: [
-                                  B.jsx("span", {
-                                    className: Wr,
-                                    children: e.user.username,
-                                  }),
-                                  B.jsx("span", {
-                                    className: Hr,
-                                    children: $e(e.seconds || 0),
-                                  }),
-                                ],
-                              }),
+                              item,
+                              subIdx,
+                              clickIdx,
+                              onOpen: t,
                             },
-                            e.md5 || n,
-                          ),
-                        ),
+                            item.momentUid || item.canonical_uid || item.id || item.md5 || subIdx,
+                          );
+                        }),
                       }),
                     ],
                   },
-                  e.key,
+                  dayGroup.key,
                 ),
               ),
-              (nm || rm) &&
-                B.jsxs("div", {
-                  className: "lk-libfoot",
-                  children: [
-                    nm
-                      ? "Đang tải khoảnh khắc cũ…"
-                      : rm
-                        ? "Hết khoảnh khắc cũ để tải thêm"
-                        : null,
-                    nm && B.jsx("span", { className: "lk-lib-skel" }),
-                  ],
-                }),
+              B.jsxs("div", {
+                className: "lk-libfoot",
+                children: [
+                  nm
+                    ? B.jsxs("div", {
+                        className: "lk-lib-loading",
+                        children: [
+                          B.jsx("span", { className: "lk-spinner" }),
+                          B.jsx("span", { children: "Đang tải thêm khoảnh khắc cũ…" }),
+                        ],
+                      })
+                    : (rm && renderedDaysCount >= n.length)
+                      ? B.jsxs("span", {
+                          className: "lk-lib-end",
+                          children: [
+                            B.jsx("svg", {
+                              className: "lk-ios-icon",
+                              width: "14",
+                              height: "14",
+                              viewBox: "0 0 24 24",
+                              fill: "none",
+                              stroke: "currentColor",
+                              strokeWidth: "2.5",
+                              strokeLinecap: "round",
+                              strokeLinejoin: "round",
+                              style: { verticalAlign: "-2px", marginRight: "6px" },
+                              children: B.jsx("polyline", { points: "20 6 9 17 4 12" }),
+                            }),
+                            "Đã tải hết toàn bộ khoảnh khắc cũ",
+                          ],
+                        })
+                      : B.jsxs("button", {
+                          type: "button",
+                          className: "btn lk-btn-load-more",
+                          onClick: () => {
+                            if (renderedDaysCount < n.length) {
+                              setRenderedDaysCount((prev) => Math.min(n.length, prev + 20));
+                            } else if (am) {
+                              am(selectedFilter);
+                            }
+                          },
+                          children: [
+                            "Tải thêm khoảnh khắc cũ",
+                            B.jsx("svg", {
+                              className: "lk-ios-icon",
+                              width: "13",
+                              height: "13",
+                              viewBox: "0 0 24 24",
+                              fill: "none",
+                              stroke: "currentColor",
+                              strokeWidth: "2.5",
+                              strokeLinecap: "round",
+                              strokeLinejoin: "round",
+                              style: { verticalAlign: "-2px", marginLeft: "6px" },
+                              children: B.jsx("polyline", { points: "6 9 12 15 18 9" }),
+                            }),
+                          ],
+                        }),
+                  nm && B.jsx("span", { className: "lk-lib-skel" }),
+                ],
+              }),
             ],
           }),
     ],
@@ -12980,8 +13478,8 @@ function Ea({
   user: e,
   friends: t,
   onShowAbout: n,
-  onShowChatProbe: r,
   onLogout: o,
+  onOpenCleaner = null,
 }) {
   const { settings: i, update: s } = (function () {
       const [e, t] = A.useState(_);
@@ -13026,18 +13524,136 @@ function Ea({
             className: ca,
             children: [
               (null == e ? void 0 : e.photoUrl)
-                ? B.jsx("img", { className: da, src: e.photoUrl, alt: "" })
+                ? B.jsx("img", { className: oe(da, "lk-gold-avatar-ring"), src: e.photoUrl, alt: "" })
                 : B.jsx("span", {
-                    className: oe(da, fa),
+                    className: oe(da, fa, "lk-gold-avatar-ring"),
                     children: h.charAt(0).toUpperCase(),
                   }),
               B.jsxs("div", {
                 className: pa,
                 children: [
-                  B.jsx("span", { className: ha, children: h }),
-                  !!(null == e ? void 0 : e.email) &&
-                    e.email !== h &&
-                    B.jsx("span", { className: ma, children: e.email }),
+                  B.jsx("div", {
+                    className: "lk-profile-name-row",
+                    children: B.jsx("span", { className: ha, children: h }),
+                  }),
+                  B.jsxs("div", {
+                    className: "lk-profile-sub-row",
+                    children: [
+                      !!(null == e ? void 0 : e.username) &&
+                        B.jsx("span", { className: ma, children: `@${e.username}` }),
+                      !!(null == e ? void 0 : e.email) &&
+                        e.email !== h &&
+                        B.jsx("span", { className: ma, children: e.email }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
+          B.jsxs("div", {
+            className: "lk-gold-vip-card",
+            children: [
+              B.jsxs("div", {
+                className: "lk-gold-vip-header",
+                children: [
+                  B.jsxs("div", {
+                    className: "lk-gold-vip-title-group",
+                    children: [
+                      B.jsx("svg", {
+                        className: "lk-gold-vip-sparkle lk-ios-icon",
+                        width: "16",
+                        height: "16",
+                        viewBox: "0 0 24 24",
+                        fill: "none",
+                        stroke: "#ffd700",
+                        strokeWidth: "2",
+                        strokeLinecap: "round",
+                        strokeLinejoin: "round",
+                        children: B.jsx("polygon", {
+                          points: "12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2",
+                        }),
+                      }),
+                      B.jsx("span", { className: "lk-gold-vip-title", children: "Locket Gold Member" }),
+                    ],
+                  }),
+                  B.jsx("span", { className: "lk-gold-badge lk-gold-vip-active-pill", children: "Đang kích hoạt" }),
+                ],
+              }),
+              B.jsx("p", {
+                className: "lk-gold-vip-desc",
+                children: "Trải nghiệm mượt mà không giới hạn với công nghệ nạp On-Demand và 30 luồng siêu tốc.",
+              }),
+              B.jsxs("div", {
+                className: "lk-gold-perks-row",
+                children: [
+                  B.jsxs("span", {
+                    className: "lk-gold-perk-chip",
+                    children: [
+                      B.jsx("svg", {
+                        width: "12",
+                        height: "12",
+                        viewBox: "0 0 24 24",
+                        fill: "currentColor",
+                        stroke: "none",
+                        children: B.jsx("polygon", { points: "13 2 3 14 12 14 11 22 21 10 12 10 13 2" }),
+                      }),
+                      " 30 luồng siêu tốc",
+                    ],
+                  }),
+                  B.jsxs("span", {
+                    className: "lk-gold-perk-chip",
+                    children: [
+                      B.jsx("svg", {
+                        width: "12",
+                        height: "12",
+                        viewBox: "0 0 24 24",
+                        fill: "none",
+                        stroke: "currentColor",
+                        strokeWidth: "2",
+                        children: [
+                          B.jsx("rect", { x: "3", y: "3", width: "18", height: "18", rx: "3" }),
+                          B.jsx("circle", { cx: "8.5", cy: "8.5", r: "1.5" }),
+                          B.jsx("polyline", { points: "21 15 16 10 5 21" }),
+                        ],
+                      }),
+                      " Nạp ảnh On-Demand",
+                    ],
+                  }),
+                  B.jsxs("span", {
+                    className: "lk-gold-perk-chip",
+                    children: [
+                      B.jsx("svg", {
+                        width: "12",
+                        height: "12",
+                        viewBox: "0 0 24 24",
+                        fill: "none",
+                        stroke: "currentColor",
+                        strokeWidth: "2",
+                        children: [
+                          B.jsx("polyline", { points: "23 4 23 10 17 10" }),
+                          B.jsx("path", { d: "M20.49 15a9 9 0 1 1-2.12-9.36L23 10" }),
+                        ],
+                      }),
+                      " Real-time Sync",
+                    ],
+                  }),
+                  B.jsxs("span", {
+                    className: "lk-gold-perk-chip",
+                    children: [
+                      B.jsx("svg", {
+                        width: "12",
+                        height: "12",
+                        viewBox: "0 0 24 24",
+                        fill: "none",
+                        stroke: "currentColor",
+                        strokeWidth: "2",
+                        children: B.jsx("polygon", {
+                          points: "12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2",
+                        }),
+                      }),
+                      " VIP Trọn đời",
+                    ],
+                  }),
                 ],
               }),
             ],
@@ -13078,6 +13694,40 @@ function Ea({
           B.jsxs("section", {
             className: ga,
             children: [
+              B.jsx("h2", { className: va, children: "Lịch sử khoảnh khắc" }),
+              B.jsxs("div", {
+                className: ya,
+                title: "Tự động tải sâu toàn bộ lịch sử ảnh cũ trong quá khứ khi lướt. Bạn nên tắt tùy chọn này nếu tài khoản đã dùng lâu năm và có lượng ảnh quá lớn để tránh ngốn băng thông và giật lag.",
+                children: [
+                  B.jsx("span", { className: ba, children: B.jsx(Ne, {}) }),
+                  B.jsxs("div", {
+                    className: ka,
+                    children: [
+                      B.jsx("span", {
+                        className: xa,
+                        children: "Tự động tải sâu lịch sử ảnh cũ / Tải liên tục",
+                      }),
+                      B.jsx("span", {
+                        className: wa,
+                        children:
+                          "Tự động nạp đa luồng ảnh quá khứ (ưu tiên tài khoản của bạn trước, sau đó đến bạn bè). Tắt nếu tài khoản lâu năm có số lượng ảnh khổng lồ.",
+                      }),
+                    ],
+                  }),
+                  B.jsx(Na, {
+                    label: "Tự động tải sâu lịch sử ảnh cũ / Tải liên tục",
+                    checked: !!i.autoLoadDeepHistory,
+                    onChange: (e) => {
+                      s({ autoLoadDeepHistory: e });
+                    },
+                  }),
+                ],
+              }),
+            ],
+          }),
+          B.jsxs("section", {
+            className: ga,
+            children: [
               B.jsx("h2", { className: va, children: "Giao diện" }),
               B.jsxs("label", {
                 className: "lk-setting-field",
@@ -13108,6 +13758,10 @@ function Ea({
                     value: i.accent || "rose",
                     onChange: (e) => s({ accent: e.target.value }),
                     children: [
+                      B.jsx("option", {
+                        value: "gold",
+                        children: "Vàng Locket Gold",
+                      }),
                       B.jsx("option", {
                         value: "rose",
                         children: "Hồng Locket",
@@ -13215,6 +13869,48 @@ function Ea({
             className: ga,
             children: [
               B.jsx("h2", { className: va, children: "Dữ liệu" }),
+              onOpenCleaner &&
+                B.jsxs("button", {
+                  type: "button",
+                  className: ya,
+                  onClick: onOpenCleaner,
+                  children: [
+                    B.jsx("span", {
+                      className: ba,
+                      children: B.jsx("svg", {
+                        className: "lk-ios-icon",
+                        width: "18",
+                        height: "18",
+                        viewBox: "0 0 24 24",
+                        fill: "none",
+                        stroke: "currentColor",
+                        strokeWidth: "1.8",
+                        strokeLinecap: "round",
+                        strokeLinejoin: "round",
+                        children: [
+                          B.jsx("rect", { x: "3", y: "4", width: "18", height: "18", rx: "4", ry: "4" }),
+                          B.jsx("line", { x1: "16", y1: "2", x2: "16", y2: "6" }),
+                          B.jsx("line", { x1: "8", y1: "2", x2: "8", y2: "6" }),
+                          B.jsx("line", { x1: "3", y1: "10", x2: "21", y2: "10" }),
+                        ],
+                      }),
+                    }),
+                    B.jsxs("div", {
+                      className: ka,
+                      children: [
+                        B.jsx("span", {
+                          className: xa,
+                          children: "Xóa ảnh theo khoảng thời gian",
+                        }),
+                        B.jsx("span", {
+                          className: wa,
+                          children:
+                            "Lọc theo khoảng ngày hoặc người đăng để dọn dẹp ảnh cũ an toàn",
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
               B.jsxs("button", {
                 type: "button",
                 className: ya,
@@ -13241,34 +13937,7 @@ function Ea({
               }),
             ],
           }),
-          B.jsxs("section", {
-            className: ga,
-            children: [
-              B.jsx("h2", { className: va, children: "Nhà phát triển" }),
-              B.jsxs("button", {
-                type: "button",
-                className: ya,
-                onClick: r,
-                children: [
-                  B.jsx("span", { className: ba, children: B.jsx(Me, {}) }),
-                  B.jsxs("div", {
-                    className: ka,
-                    children: [
-                      B.jsx("span", {
-                        className: xa,
-                        children: "Thử kết nối chat",
-                      }),
-                      B.jsx("span", {
-                        className: wa,
-                        children:
-                          "Kết nối WebSocket chat và in ra frame nhận được, để tìm định dạng tin nhắn",
-                      }),
-                    ],
-                  }),
-                ],
-              }),
-            ],
-          }),
+
           B.jsxs("section", {
             className: ga,
             children: [
@@ -13403,401 +14072,91 @@ function Fa({ onBack: e }) {
     ],
   });
 }
-const Da = {
-    none: "Không gửi token",
-    "query-token": "Query ?token=",
-    "query-access-token": "Query ?access_token=",
-    "query-authorization": "Query ?authorization=",
-    "subprotocol-bearer": "Subprotocol: Bearer, <token>",
-    "subprotocol-raw": "Subprotocol: <token>",
-    "first-frame": "Gửi token ở frame đầu",
-  },
-  Ua = [
-    "none",
-    "query-token",
-    "query-access-token",
-    "query-authorization",
-    "subprotocol-bearer",
-    "subprotocol-raw",
-    "first-frame",
-  ];
-function Ba({ selfUid: e, otherUid: t, token: n, strategy: r, onEvent: a }) {
-  const l = (e, t) => a({ at: Date.now(), kind: e, detail: t });
-  let o;
-  try {
-    o = new WebSocket(
-      (function (e, t, n, r) {
-        const a = new URL("wss://api.locketcamera.com/wss_v2/chat");
-        return (
-          a.searchParams.set("otherUserId", t),
-          a.searchParams.set("userId", e),
-          "query-token" === n && a.searchParams.set("token", r),
-          "query-access-token" === n && a.searchParams.set("access_token", r),
-          "query-authorization" === n &&
-            a.searchParams.set("authorization", `Bearer ${r}`),
-          a.toString()
-        );
-      })(e, t, r, n),
-      (function (e, t) {
-        return "subprotocol-bearer" === e
-          ? ["Bearer", t]
-          : "subprotocol-raw" === e
-            ? [t]
-            : void 0;
-      })(r, n),
-    );
-  } catch (i) {
-    return (l("error", `Không tạo được socket: ${String(i)}`), () => {});
-  }
-  return (
-    (o.onopen = () => {
-      if (
-        (l("open", "Đã kết nối (101 Switching Protocols)"), "first-frame" === r)
-      ) {
-        const e = JSON.stringify({ authorization: `Bearer ${n}` });
-        (o.send(e), l("sent", e));
-      }
-    }),
-    (o.onmessage = (e) => {
-      const t = e.data;
-      "string" == typeof t
-        ? l("frame", t)
-        : t instanceof Blob
-          ? t.text().then((e) => l("frame", `[binary ${t.size}B] ${e}`))
-          : l("frame", `[${typeof t}] ${String(t)}`);
-    }),
-    (o.onerror = () => l("error", "Socket báo lỗi")),
-    (o.onclose = (e) =>
-      l("close", `Đóng: code ${e.code}${e.reason ? ` — ${e.reason}` : ""}`)),
-    () => {
-      ((o.onopen = null),
-        (o.onmessage = null),
-        (o.onerror = null),
-        (o.onclose = null),
-        (o.readyState !== WebSocket.OPEN &&
-          o.readyState !== WebSocket.CONNECTING) ||
-          o.close());
-    }
-  );
-}
-function Aa({
-  selfUid: e,
-  otherUid: t,
-  token: n,
-  strategy: r,
-  budgetMs: a,
-  onEvent: l,
-}) {
-  return new Promise((o) => {
-    const i = {
-      strategy: r,
-      opened: !1,
-      frames: [],
-      closeCode: null,
-      error: null,
-    };
-    let s = !1,
-      u = () => {};
-    const c = () => {
-        s || ((s = !0), clearTimeout(d), u(), o(i));
-      },
-      d = setTimeout(c, a);
-    u = Ba({
-      selfUid: e,
-      otherUid: t,
-      token: n,
-      strategy: r,
-      onEvent: (e) => {
-        var t;
-        if (
-          (null == l || l(e),
-          "open" === e.kind && (i.opened = !0),
-          "frame" === e.kind && i.frames.push(e.detail),
-          "error" === e.kind && (i.error = e.detail),
-          "close" === e.kind)
-        ) {
-          const n = Number(
-            (null == (t = e.detail.match(/code (\d+)/)) ? void 0 : t[1]) ?? NaN,
-          );
-          ((i.closeCode = Number.isNaN(n) ? null : n), c());
-        }
-      },
-    });
-  });
-}
-const $a = {
-    Probe: "_Probe_wc3ja_1",
-    Body: "_Body_wc3ja_7",
-    Intro: "_Intro_wc3ja_16",
-    Controls: "_Controls_wc3ja_23",
-    Select: "_Select_wc3ja_30",
-    Run: "_Run_wc3ja_47",
-    Results: "_Results_wc3ja_54",
-    Result: "_Result_wc3ja_54",
-    pass: "_pass_wc3ja_73",
-    ResultName: "_ResultName_wc3ja_78",
-    ResultStat: "_ResultStat_wc3ja_85",
-    Winner: "_Winner_wc3ja_90",
-    Log: "_Log_wc3ja_100",
-    Placeholder: "_Placeholder_wc3ja_115",
-    Line: "_Line_wc3ja_123",
-    Stamp: "_Stamp_wc3ja_132",
-    Kind: "_Kind_wc3ja_137",
-    Detail: "_Detail_wc3ja_143",
-    open: "_open_wc3ja_149",
-    sent: "_sent_wc3ja_153",
-    frame: "_frame_wc3ja_157",
-    error: "_error_wc3ja_161",
-    close: "_close_wc3ja_165",
-  },
-  Va = (e) => new Date(e).toLocaleTimeString("vi-VN", { hour12: !1 });
-function Wa({ friends: e, onBack: t }) {
-  var n;
-  const [r, a] = A.useState((null == (n = e[0]) ? void 0 : n.uid) ?? ""),
-    [l, o] = A.useState([]),
-    [i, s] = A.useState([]),
-    [u, c] = A.useState(!1),
-    [d, f] = A.useState(!1),
-    p = A.useRef(null),
-    h = A.useRef(!1);
-  (A.useEffect(
-    () => () => {
-      h.current = !0;
-    },
-    [],
-  ),
-    A.useEffect(() => {
-      const e = p.current;
-      e &&
-        e.scrollHeight - e.scrollTop - e.clientHeight < 60 &&
-        (e.scrollTop = e.scrollHeight);
-    }, [l]));
-  const g = A.useCallback(async () => {
-      const e = await b(),
-        { user: t } = await m(["user"]);
-      e && (null == t ? void 0 : t.localId)
-        ? r &&
-          (c(!0),
-          o([]),
-          s([]),
-          await (async function ({
-            selfUid: e,
-            otherUid: t,
-            token: n,
-            budgetMs: r = 4e3,
-            onEvent: a,
-            onResult: l,
-          }) {
-            const o = [];
-            for (const i of Ua) {
-              const s = await Aa({
-                selfUid: e,
-                otherUid: t,
-                token: n,
-                strategy: i,
-                budgetMs: r,
-                onEvent: (e) => (null == a ? void 0 : a(i, e)),
-              });
-              (o.push(s), null == l || l(s));
-            }
-            return o;
-          })({
-            selfUid: t.localId,
-            otherUid: r,
-            token: e.token,
-            onEvent: (e, t) => {
-              h.current || o((n) => [...n, { strategy: e, event: t }]);
-            },
-            onResult: (e) => {
-              h.current || s((t) => [...t, e]);
-            },
-          }),
-          h.current || c(!1))
-        : o([
-            {
-              strategy: "none",
-              event: {
-                at: Date.now(),
-                kind: "error",
-                detail: "Chưa đăng nhập.",
-              },
-            },
-          ]);
-    }, [r]),
-    v = A.useCallback(async () => {
-      const e = i
-          .map(
-            (e) =>
-              `${Da[e.strategy]}: open=${e.opened} frames=${e.frames.length} close=${e.closeCode ?? "-"}`,
-          )
-          .join("\n"),
-        t = l
-          .map(
-            (e) =>
-              `[${Va(e.event.at)}] ${e.strategy} ${e.event.kind}: ${e.event.detail}`,
-          )
-          .join("\n");
-      (await navigator.clipboard.writeText(
-        `=== KẾT QUẢ ===\n${e}\n\n=== LOG ===\n${t}`,
-      ),
-        f(!0),
-        setTimeout(() => f(!1), 1800));
-    }, [l, i]),
-    y = i.find((e) => e.opened && e.frames.length > 0);
-  return B.jsxs("div", {
-    className: $a.Probe,
-    children: [
-      B.jsx(Or, {
-        title: "Thử kết nối chat",
-        subtitle: "Công cụ chẩn đoán",
-        leading: B.jsx(vn, {
-          label: "Quay lại",
-          onClick: t,
-          children: B.jsx(we, {}),
-        }),
-        trailing: B.jsx(vn, {
-          label: d ? "Đã sao chép" : "Sao chép kết quả",
-          onClick: () => {
-            v();
-          },
-          disabled: 0 === l.length,
-          active: d,
-          children: B.jsx(Se, {}),
-        }),
-      }),
-      B.jsxs("div", {
-        className: $a.Body,
-        children: [
-          B.jsxs("p", {
-            className: $a.Intro,
-            children: [
-              "Trình duyệt không đặt được header ",
-              B.jsx("code", { children: "Authorization" }),
-              " lên WebSocket, nên token phải đi đường khác. Công cụ này thử lần lượt từng cách và xem server chấp nhận cách nào, đồng thời in nguyên văn frame nhận được.",
-            ],
-          }),
-          B.jsxs("div", {
-            className: $a.Controls,
-            children: [
-              B.jsxs("select", {
-                className: $a.Select,
-                value: r,
-                disabled: u,
-                onChange: (e) => a(e.target.value),
-                children: [
-                  0 === e.length &&
-                    B.jsx("option", {
-                      value: "",
-                      children: "Chưa quét bạn bè",
-                    }),
-                  e.map((e) =>
-                    B.jsx(
-                      "option",
-                      { value: e.uid, children: e.displayName },
-                      e.uid,
-                    ),
-                  ),
-                ],
-              }),
-              B.jsxs("button", {
-                type: "button",
-                className: oe("btn", $a.Run),
-                disabled: 0 === e.length || u || !r,
-                onClick: () => {
-                  g();
-                },
-                children: [
-                  u ? B.jsx(qe, {}) : B.jsx(Re, {}),
-                  u ? "Đang thử…" : "Chạy thử",
-                ],
-              }),
-            ],
-          }),
-          i.length > 0 &&
-            B.jsx("div", {
-              className: $a.Results,
-              children: i.map((e) => {
-                const t = e.opened && e.frames.length > 0;
-                return B.jsxs(
-                  "div",
-                  {
-                    className: oe($a.Result, t && $a.pass),
-                    children: [
-                      B.jsx("span", {
-                        className: $a.ResultName,
-                        children: Da[e.strategy],
-                      }),
-                      B.jsxs("span", {
-                        className: $a.ResultStat,
-                        children: [
-                          e.opened
-                            ? "101"
-                            : B.jsx(Ae, {
-                                className: "lk-inline-status-icon",
-                                "aria-label": "Thất bại",
-                              }),
-                          " · ",
-                          e.frames.length,
-                          " frame",
-                          null !== e.closeCode && ` · ${e.closeCode}`,
-                        ],
-                      }),
-                    ],
-                  },
-                  e.strategy,
-                );
-              }),
-            }),
-          y &&
-            B.jsxs("p", {
-              className: $a.Winner,
-              children: [
-                "Server chấp nhận: ",
-                B.jsx("strong", { children: Da[y.strategy] }),
-              ],
-            }),
-          B.jsx("div", {
-            className: $a.Log,
-            ref: p,
-            children:
-              0 === l.length
-                ? B.jsx("p", {
-                    className: $a.Placeholder,
-                    children: "Chưa có gì. Bấm Chạy thử để bắt đầu.",
-                  })
-                : l.map((e, t) =>
-                    B.jsxs(
-                      "div",
-                      {
-                        className: oe($a.Line, $a[e.event.kind]),
-                        children: [
-                          B.jsx("span", {
-                            className: $a.Stamp,
-                            children: Va(e.event.at),
-                          }),
-                          B.jsx("span", {
-                            className: $a.Kind,
-                            children: e.event.kind,
-                          }),
-                          B.jsx("span", {
-                            className: $a.Detail,
-                            children: e.event.detail,
-                          }),
-                        ],
-                      },
-                      t,
-                    ),
-                  ),
-          }),
-        ],
-      }),
-    ],
-  });
-}
 const Ha = "_Shell_ls6w7_1",
   Qa = "_Stage_ls6w7_9",
   qa = "_Pane_ls6w7_16",
   Ka = "_visible_ls6w7_26";
+
+function getImageKey(url) {
+  if (!url || typeof url !== 'string') return '';
+  const clean = url.split('?')[0].replace(/^https?:\/\/[^/]+/i, '').replace(/firebasestorage\.googleapis\.com(:443)?/g, 'cdn.locketcamera.com');
+  const filenameMatch = clean.match(/([^/]+\.(?:webp|jpg|jpeg|png))$/i);
+  if (filenameMatch && filenameMatch[1].length >= 20) {
+    return filenameMatch[1];
+  }
+  return clean;
+}
+
+function deduplicateMoments(momentsList, friendsList = [], myUid = null, myUser = null, deletedIds = []) {
+  if (!Array.isArray(momentsList)) return [];
+  const friendsMap = new Map((friendsList || []).map((f) => [f.uid, f]));
+  const seenMap = new Map();
+  const deletedSet = deletedIds instanceof Set ? deletedIds : (Array.isArray(deletedIds) && deletedIds.length > 0 ? new Set(deletedIds) : null);
+
+  for (const m of momentsList) {
+    if (!m) continue;
+    const uid = m.momentUid || m.canonical_uid || m.id;
+    const imgKey = getImageKey(m.thumbnail_url);
+    const md5 = m.md5 && !String(m.md5).startsWith('reply_') ? m.md5 : null;
+
+    if (deletedSet) {
+      if (uid && deletedSet.has(uid)) continue;
+      if (m.id && deletedSet.has(m.id)) continue;
+      if (m.momentUid && deletedSet.has(m.momentUid)) continue;
+      if (m.canonical_uid && deletedSet.has(m.canonical_uid)) continue;
+      if (imgKey && deletedSet.has(imgKey)) continue;
+      if (md5 && deletedSet.has(md5)) continue;
+    }
+
+    // Primary unique identifier
+    const primaryKey = imgKey || uid || md5;
+    if (!primaryKey) continue;
+
+    const authorUid = m.authorUid || m.user?.uid;
+    const isMe = Boolean(myUid && authorUid && authorUid === myUid);
+    let user = { ...(m.user || {}) };
+    user.uid = authorUid || user.uid;
+
+    if (isMe) {
+      user.username = myUser?.displayName || myUser?.username || "Tôi";
+      user.avatar = myUser?.photoUrl || myUser?.profile_picture_url || user.avatar || "";
+    } else if (authorUid && friendsMap.has(authorUid)) {
+      const fr = friendsMap.get(authorUid);
+      if (!user.username || user.username === "Bạn bè" || user.username === "Không rõ") {
+        user.username = fr.displayName || fr.username || user.username;
+      }
+      if (!user.avatar) {
+        user.avatar = fr.avatar || "";
+      }
+    }
+
+    const normThumb = optimizeImageUrl(m.thumbnail_url);
+    const normalizedMoment = {
+      ...m,
+      id: uid || primaryKey,
+      momentUid: uid || m.momentUid,
+      canonical_uid: uid || m.canonical_uid,
+      md5: md5 || uid || primaryKey,
+      authorUid: authorUid || user.uid,
+      thumbnail_url: normThumb,
+      user,
+    };
+
+    if (seenMap.has(primaryKey)) {
+      const existing = seenMap.get(primaryKey);
+      const existingIsGeneric = !existing.user?.username || existing.user.username === "Bạn bè" || existing.user.username === "Không rõ";
+      const newHasRealName = user.username && user.username !== "Bạn bè" && user.username !== "Không rõ";
+      if (existingIsGeneric && newHasRealName) {
+        seenMap.set(primaryKey, normalizedMoment);
+      }
+    } else {
+      seenMap.set(primaryKey, normalizedMoment);
+    }
+  }
+
+  return Array.from(seenMap.values()).sort((a, b) => (b.seconds || 0) - (a.seconds || 0));
+}
+
 function Xa() {
   const { userData: e, setLoggedIn: t, setUserData: n } = ae(),
     {
@@ -13805,6 +14164,7 @@ function Xa() {
       loading: a,
       newCount: o,
       acknowledgeNew: i,
+      setNewCount: setMomentsNewCount,
     } = (function () {
       const [e, t] = A.useState([]),
         [n, r] = A.useState(!0),
@@ -13824,12 +14184,31 @@ function Xa() {
           ),
           [i],
         ),
+        A.useEffect(() => {
+          const handleStorageChange = (changes, area) => {
+            if (area === "local") {
+              if (changes.moments) {
+                const updated = changes.moments.newValue || [];
+                t(updated);
+                r(!1);
+              }
+              if (changes.deletedMomentIds) {
+                setDeletedMomentIds(changes.deletedMomentIds.newValue || []);
+              }
+            }
+          };
+          if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
+            chrome.storage.onChanged.addListener(handleStorageChange);
+            return () => chrome.storage.onChanged.removeListener(handleStorageChange);
+          }
+        }, []),
         {
           moments: e,
           loading: n,
           newCount: a,
           acknowledgeNew: A.useCallback(() => o(0), []),
           reload: i,
+          setNewCount: o,
         }
       );
     })(),
@@ -13870,17 +14249,329 @@ function Xa() {
       );
     })(),
     [u, c] = A.useState("feed"),
+    [hasVisitedGallery, setHasVisitedGallery] = A.useState(false),
+    [openDateCleaner, setOpenDateCleaner] = A.useState(false),
+    [deletedMomentIds, setDeletedMomentIds] = A.useState([]),
+    [chatTargetUser, setChatTargetUser] = A.useState(null),
+    [chatUnreadCount, setChatUnreadCount] = A.useState(0),
     [d, f] = A.useState(null),
     [g, v] = A.useState(0),
     [y, b] = A.useState(null),
     [lm, sm] = A.useState(null),
-    k = A.useMemo(() => (y ? r.filter((e) => e.user.uid === y) : r), [r, y]),
+    [appSettings, setAppSettings] = A.useState(_),
+    myUid = e?.localId || e?.uid || null,
+    cleanMoments = A.useMemo(() => {
+      return deduplicateMoments(r, s.friends, myUid, e, deletedMomentIds);
+    }, [r, s.friends, myUid, e, deletedMomentIds]),
+    k = A.useMemo(() => {
+      if (!y) return cleanMoments;
+      if (y === myUid) return cleanMoments.filter((item) => item.user.uid === myUid || item.authorUid === myUid);
+      return cleanMoments.filter((item) => item.user.uid === y || item.authorUid === y);
+    }, [cleanMoments, y, myUid]),
     x = A.useCallback((e) => {
       (b(e), v(0));
     }, []),
     w = A.useCallback((e) => {
       sm(e);
     }, []);
+  A.useEffect(() => {
+    S().then(setAppSettings);
+    chrome.storage.local.get(["deletedMomentIds"], (res) => {
+      if (Array.isArray(res?.deletedMomentIds)) {
+        setDeletedMomentIds(res.deletedMomentIds);
+      }
+    });
+    const listener = (changes, area) => {
+      if (area === "local" && changes.settings && changes.settings.newValue) {
+        setAppSettings(changes.settings.newValue);
+      }
+    };
+    if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener(listener);
+      return () => chrome.storage.onChanged.removeListener(listener);
+    }
+  }, []);
+  A.useEffect(() => {
+    if (e && (e.localId || e.uid)) {
+      looketService.updateConfig({ myUid: e.localId || e.uid });
+    }
+  }, [e]);
+  A.useEffect(() => {
+    if (u === "gallery" && !hasVisitedGallery) {
+      setHasVisitedGallery(true);
+    }
+  }, [u, hasVisitedGallery]);
+  A.useEffect(() => {
+    if (Array.isArray(r) && r.length > 0) {
+      const cleaned = deduplicateMoments(r, s.friends, myUid, e, deletedMomentIds);
+      if (cleaned.length !== r.length) {
+        chrome.storage.local.set({ moments: cleaned }, () => {
+          i();
+        });
+      }
+    }
+  }, [r, s.friends, myUid, e, i, deletedMomentIds]);
+  const fetchMoments = A.useCallback(async (targetUid = null) => {
+    try {
+      const myId = e?.localId || e?.uid || myUid;
+      if (!myId) return;
+      const isAutoDeep = Boolean(appSettings?.autoLoadDeepHistory);
+
+      // Nếu người dùng chọn lọc theo 1 bạn bè cụ thể
+      if (targetUid && targetUid !== myId) {
+        const fetched = isAutoDeep
+          ? await looketService.fetchFullUserHistory(targetUid, {
+              concurrency: 30,
+              pageSize: 30,
+              maxPages: 1
+            })
+          : await looketService.getMomentsHistory(targetUid, 30);
+        if (fetched && fetched.length > 0) {
+          const updated = fetched.map((item) => {
+            const fr = s.friends.find((f) => f.uid === item.authorUid || f.uid === item.user?.uid);
+            return {
+              ...item,
+              authorUid: item.authorUid || item.user?.uid,
+              user: {
+                uid: item.authorUid || item.user?.uid,
+                username: fr?.displayName || fr?.username || "Bạn bè",
+                avatar: fr?.avatar || ""
+              }
+            };
+          });
+
+          const thumbs = updated.map((m) => m.thumbnail_url).filter(Boolean);
+          if (thumbs.length > 0) {
+            looketService.preloadImages(thumbs.slice(0, 30), 30).catch(() => {});
+          }
+
+          await new Promise((resolve) => {
+            chrome.storage.local.get(["moments", "deletedMomentIds"], (res) => {
+              const cur = res.moments || [];
+              const deletedSet = new Set(res?.deletedMomentIds || []);
+              const filtered = updated.filter((item) => {
+                const uid = item.canonical_uid || item.momentUid || item.id;
+                const imgKey = getImageKey(item.thumbnail_url);
+                return !(uid && deletedSet.has(uid)) && !(imgKey && deletedSet.has(imgKey));
+              });
+              const merged = deduplicateMoments([...filtered, ...cur], s.friends, myId, e, deletedSet);
+              if (merged.length !== cur.length) {
+                chrome.storage.local.set({ moments: merged }, () => {
+                  i();
+                  resolve();
+                });
+              } else {
+                resolve();
+              }
+            });
+          });
+        }
+        return;
+      }
+
+      // -------------------------------------------------------------------
+      // QUY TRÌNH ƯU TIÊN: TÀI KHOẢN ĐANG DÙNG (MY_UID) ĐƯỢC TẢI TRƯỚC HẾT
+      // -------------------------------------------------------------------
+      let myMoments = [];
+      if (isAutoDeep) {
+        // Quét sâu lịch sử ảnh của chính mình bằng 30 luồng song song (30 ảnh đầu tiên, các ảnh sau nạp on-demand khi cuộn)
+        myMoments = await looketService.fetchFullUserHistory(myId, {
+          concurrency: 30,
+          pageSize: 30,
+          maxPages: 1
+        });
+      } else {
+        // Tải 30 ảnh gần nhất của chính mình trước
+        myMoments = await looketService.getMomentsHistory(myId, 30);
+      }
+
+      if (myMoments && myMoments.length > 0) {
+        const updatedSelf = myMoments.map((item) => {
+          return {
+            ...item,
+            authorUid: myId,
+            user: {
+              uid: myId,
+              username: e?.displayName || e?.username || "Tôi",
+              avatar: e?.photoUrl || e?.profile_picture_url || ""
+            }
+          };
+        });
+
+        await new Promise((resolve) => {
+          chrome.storage.local.get(["moments", "deletedMomentIds"], (res) => {
+            const cur = res.moments || [];
+            const deletedSet = new Set(res?.deletedMomentIds || []);
+            const filtered = updatedSelf.filter((item) => {
+              const uid = item.canonical_uid || item.momentUid || item.id;
+              const imgKey = getImageKey(item.thumbnail_url);
+              return !(uid && deletedSet.has(uid)) && !(imgKey && deletedSet.has(imgKey));
+            });
+            const merged = deduplicateMoments([...filtered, ...cur], s.friends, myId, e, deletedSet);
+            chrome.storage.local.set({ moments: merged }, () => {
+              i();
+              resolve();
+            });
+          });
+        });
+      }
+
+      // -------------------------------------------------------------------
+      // BƯỚC TIẾP THEO: SAU KHI HOÀN THÀNH CỦA MÌNH MỚI TIẾN HÀNH TẢI BẠN BÈ
+      // -------------------------------------------------------------------
+      if (targetUid === null) {
+        let friendMoments = [];
+        if (isAutoDeep && s.friends && s.friends.length > 0) {
+          friendMoments = await looketService.fetchFriendsMomentsConcurrently(s.friends, 30, 30);
+        }
+        const feedMoments = await looketService.getMomentsHistory(null, 30);
+        const combined = [...friendMoments, ...(feedMoments || [])];
+
+        if (combined.length > 0) {
+          const updatedFriends = combined.map((item) => {
+            const isMe = item.authorUid === myId;
+            const fr = isMe
+              ? { displayName: "Tôi", username: e?.username || "Tôi", avatar: e?.photoUrl || e?.profile_picture_url || "" }
+              : s.friends.find((f) => f.uid === item.authorUid || f.uid === item.user?.uid);
+            return {
+              ...item,
+              authorUid: item.authorUid || (isMe ? myId : item.user?.uid),
+              user: {
+                uid: item.authorUid || item.user?.uid,
+                username: isMe ? (e?.displayName || e?.username || "Tôi") : (fr?.displayName || fr?.username || "Bạn bè"),
+                avatar: isMe ? (e?.photoUrl || e?.profile_picture_url || "") : (fr?.avatar || "")
+              }
+            };
+          });
+
+          const thumbs = updatedFriends.map((m) => m.thumbnail_url).filter(Boolean);
+          if (thumbs.length > 0) {
+            looketService.preloadImages(thumbs.slice(0, 30), 30).catch(() => {});
+          }
+
+          await new Promise((resolve) => {
+            chrome.storage.local.get(["moments", "deletedMomentIds"], (res) => {
+              const cur = res.moments || [];
+              const deletedSet = new Set(res?.deletedMomentIds || []);
+              const filtered = updatedFriends.filter((item) => {
+                const uid = item.canonical_uid || item.momentUid || item.id;
+                const imgKey = getImageKey(item.thumbnail_url);
+                return !(uid && deletedSet.has(uid)) && !(imgKey && deletedSet.has(imgKey));
+              });
+              const merged = deduplicateMoments([...filtered, ...cur], s.friends, myId, e, deletedSet);
+              chrome.storage.local.set({ moments: merged }, () => {
+                i();
+                resolve();
+              });
+            });
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Lỗi tải moments history:", err);
+    }
+  }, [e, myUid, s.friends, i, appSettings?.autoLoadDeepHistory]);
+  A.useEffect(() => {
+    if ("feed" === u) {
+      fetchMoments(y);
+    }
+  }, [y, u, fetchMoments]);
+  // Real-time live sync for moments feed & library (every 8-10 seconds)
+  const isPollingMomentsRef = A.useRef(false);
+  A.useEffect(() => {
+    const myId = e?.localId || e?.uid || myUid;
+    if (!myId) return;
+    let isCancelled = false;
+
+    const pollLatestMoments = async () => {
+      if (isPollingMomentsRef.current || isCancelled) return;
+      isPollingMomentsRef.current = true;
+      try {
+        const latest = await looketService.getMomentsHistory(null, 15);
+        if (!latest || latest.length === 0 || isCancelled) return;
+
+        chrome.storage.local.get(["moments", "unReadMoments", "deletedMomentIds"], (res) => {
+          if (isCancelled) return;
+          const curMoments = res?.moments || [];
+          const deletedSet = new Set(res?.deletedMomentIds || []);
+          const knownIdSet = new Set();
+          for (const m of curMoments) {
+            if (!m) continue;
+            if (m.canonical_uid) knownIdSet.add(m.canonical_uid);
+            if (m.momentUid) knownIdSet.add(m.momentUid);
+            if (m.id) knownIdSet.add(m.id);
+            const key = getImageKey(m.thumbnail_url);
+            if (key) knownIdSet.add(key);
+          }
+
+          const trulyNew = [];
+          for (const item of latest) {
+            if (!item) continue;
+            const uid = item.canonical_uid || item.momentUid || item.id;
+            const imgKey = getImageKey(item.thumbnail_url);
+            if ((uid && deletedSet.has(uid)) || (imgKey && deletedSet.has(imgKey))) {
+              continue;
+            }
+            const isKnown = (uid && knownIdSet.has(uid)) || (imgKey && knownIdSet.has(imgKey));
+            if (!isKnown) {
+              trulyNew.push(item);
+            }
+          }
+
+          if (trulyNew.length > 0 && !isCancelled) {
+            const formattedNew = trulyNew.map((item) => {
+              const isMe = item.authorUid === myId;
+              const fr = isMe
+                ? { displayName: "Tôi", username: e?.username || "Tôi", avatar: e?.photoUrl || e?.profile_picture_url || "" }
+                : s.friends.find((f) => f.uid === item.authorUid || f.uid === item.user?.uid);
+              return {
+                ...item,
+                authorUid: item.authorUid || (isMe ? myId : item.user?.uid),
+                user: {
+                  uid: item.authorUid || item.user?.uid,
+                  username: isMe ? (e?.displayName || e?.username || "Tôi") : (fr?.displayName || fr?.username || "Bạn bè"),
+                  avatar: isMe ? (e?.photoUrl || e?.profile_picture_url || "") : (fr?.avatar || "")
+                }
+              };
+            });
+
+            const merged = deduplicateMoments([...formattedNew, ...curMoments], s.friends, myId, e);
+            const nextUnread = (res?.unReadMoments || 0) + trulyNew.length;
+            chrome.storage.local.set({ moments: merged, unReadMoments: nextUnread }, () => {
+              if (isCancelled) return;
+              // Increase newCount state
+              setMomentsNewCount((prev) => prev + trulyNew.length);
+
+              // Update action badge
+              if (typeof chrome !== "undefined" && chrome.action) {
+                chrome.action.setBadgeBackgroundColor({ color: "#d4568f" }).catch(() => {});
+                chrome.action.setBadgeText({ text: String(nextUnread) }).catch(() => {});
+              }
+            });
+
+            const thumbs = formattedNew.map((m) => m.thumbnail_url).filter(Boolean);
+            if (thumbs.length > 0) {
+              looketService.preloadImages(thumbs.slice(0, 30), 30).catch(() => {});
+            }
+          }
+        });
+      } catch (err) {
+        // Silent catch during background poll
+      } finally {
+        isPollingMomentsRef.current = false;
+      }
+    };
+
+    const momentsPollTimer = setInterval(pollLatestMoments, 9000);
+    if (momentsPollTimer && typeof momentsPollTimer.unref === "function") {
+      momentsPollTimer.unref();
+    }
+
+    return () => {
+      isCancelled = true;
+      clearInterval(momentsPollTimer);
+    };
+  }, [e, myUid, s.friends, setMomentsNewCount]);
   A.useEffect(() => {
     if (null === lm) return;
     const e = (e) => {
@@ -13896,10 +14587,10 @@ function Xa() {
       () => window.removeEventListener("keydown", e)
     );
   }, [lm, r.length]);
-  const _ = A.useCallback(() => {
+  const handleLogout = A.useCallback(() => {
       (l({ type: "logout" }), n(null), t(!1));
     }, [t, n]),
-    S = A.useCallback(
+    handleTabChange = A.useCallback(
       (e) => {
         (c(e), "feed" === e && i());
       },
@@ -13914,20 +14605,88 @@ function Xa() {
       }),
     [],
   );
-  const xm = A.useCallback(() => {
-    vm || ym || (bm(!0), l({ type: "loadLibrary" }));
-  }, [vm, ym]);
+  const xm = A.useCallback(
+    async (targetFilter = null) => {
+      if (ym) return;
+      const myId = e?.localId || e?.uid;
+      const queryUid = targetFilter === myId ? myId : (targetFilter || null);
+      bm(!0);
+      try {
+        const matching = cleanMoments.filter((m) => {
+          if (!queryUid) return true;
+          return m.authorUid === queryUid || m.user?.uid === queryUid;
+        });
+        const oldestMoment = matching.length > 0 ? matching[matching.length - 1] : null;
+
+        const fetched = await looketService.getMomentsHistory(
+          queryUid,
+          30,
+          oldestMoment,
+          matching.length
+        );
+
+        if (!fetched || fetched.length === 0) {
+          fm(!0);
+          if (!queryUid && !vm) {
+            l({ type: "loadLibrary" });
+          }
+        } else {
+          const mapped = fetched.map((item) => {
+            const isMe = item.authorUid === myId;
+            const fr = isMe
+              ? { displayName: "Tôi", username: e?.username || "Tôi", avatar: e?.photoUrl || e?.profile_picture_url || "" }
+              : s.friends.find((f) => f.uid === item.authorUid || f.uid === item.user?.uid);
+            return {
+              ...item,
+              authorUid: item.authorUid || (isMe ? myId : item.user?.uid),
+              user: {
+                uid: item.authorUid || item.user?.uid,
+                username: isMe ? (e?.displayName || e?.username || "Tôi") : (fr?.displayName || fr?.username || "Bạn bè"),
+                avatar: isMe ? (e?.photoUrl || e?.profile_picture_url || "") : (fr?.avatar || "")
+              }
+            };
+          });
+
+          const thumbs = mapped.map((m) => m.thumbnail_url).filter(Boolean);
+          if (thumbs.length > 0) {
+            looketService.preloadImages(thumbs.slice(0, 30), 30).catch(() => {});
+          }
+
+          chrome.storage.local.get(["moments", "deletedMomentIds"], (res) => {
+            const cur = res.moments || [];
+            const deletedSet = new Set(res?.deletedMomentIds || []);
+            const filtered = mapped.filter((item) => {
+              const uid = item.canonical_uid || item.momentUid || item.id;
+              const imgKey = getImageKey(item.thumbnail_url);
+              return !(uid && deletedSet.has(uid)) && !(imgKey && deletedSet.has(imgKey));
+            });
+            const merged = deduplicateMoments([...cur, ...filtered], s.friends, myId, e, deletedSet);
+            chrome.storage.local.set({ moments: merged }, () => {
+              i();
+            });
+          });
+
+          if (fetched.length < 30) {
+            fm(!0);
+          } else {
+            fm(!1);
+          }
+        }
+      } catch (err) {
+        console.warn("Lỗi load liên tục khoảnh khắc cũ:", err);
+        l({ type: "loadLibrary" });
+      } finally {
+        bm(!1);
+      }
+    },
+    [ym, vm, e, cleanMoments, s.friends, i]
+  );
   return "about" === d
     ? B.jsx("div", {
         className: Ha,
         children: B.jsx(Fa, { onBack: () => f(null) }),
       })
-    : "chatProbe" === d
-      ? B.jsx("div", {
-          className: Ha,
-          children: B.jsx(Wa, { friends: s.friends, onBack: () => f(null) }),
-        })
-      : B.jsxs("div", {
+    : B.jsxs("div", {
           className: Ha,
           children: [
             B.jsxs("div", {
@@ -13946,17 +14705,139 @@ function Xa() {
                     friends: s.friends,
                     selectedFriend: y,
                     onSelectFriend: x,
+                    onRefreshMoments: () => fetchMoments(y),
+                    onLoadMoreOlderMoments: (frUid) => xm(frUid),
+                    myUid: myUid,
+                    myUser: e,
+                    autoLoadDeepHistory: Boolean(appSettings?.autoLoadDeepHistory),
+                    onOpenChat: (f, m = null) => {
+                      setChatTargetUser({ ...f, replyMoment: m });
+                      c("chat");
+                    },
+                  }),
+                }),
+                B.jsx("section", {
+                  className: oe(qa, "chat" === u && Ka),
+                  children: B.jsx(ChatTab, {
+                    user: e,
+                    friends: s.friends,
+                    active: "chat" === u,
+                    targetUser: chatTargetUser,
+                    onClearTarget: () => setChatTargetUser(null),
+                    onUnreadChange: (cnt) => setChatUnreadCount(cnt),
+                    onOpenMoment: async (momentUid, thumbUrl, extra = {}) => {
+                      const cleanUid = (momentUid || "").includes("/")
+                        ? momentUid.split("/").pop()
+                        : momentUid;
+                      const cleanThumb = (thumbUrl || "").split("?")[0];
+
+                      // 1. Check if already present in cleanMoments
+                      let foundIdx = cleanMoments.findIndex((m) => {
+                        if (!m) return !1;
+                        if (cleanUid && (m.momentUid === cleanUid || m.id === cleanUid || m.canonical_uid === cleanUid)) return !0;
+                        if (cleanThumb && m.thumbnail_url && m.thumbnail_url.split("?")[0] === cleanThumb) return !0;
+                        return !1;
+                      });
+
+                      if (foundIdx >= 0) {
+                        // Open lightbox immediately with the found moment
+                        sm(foundIdx);
+                        b(null);
+                        v(foundIdx);
+                        return;
+                      }
+
+                      // 2. Fetch or construct target moment
+                      let targetMoment = null;
+                      if (cleanUid) {
+                        try {
+                          targetMoment = await looketService.getMomentById(cleanUid);
+                        } catch {}
+                      }
+
+                      const isMe = extra.sender ? extra.sender !== myUid : !0;
+                      const authorUid = isMe ? myUid : (extra.sender || myUid);
+                      const fr = s.friends.find((f) => f.uid === authorUid);
+                      const authorName = isMe
+                        ? (e?.displayName || e?.username || "Tôi")
+                        : (fr?.displayName || fr?.username || "Bạn bè");
+                      const authorAvatar = isMe
+                        ? (e?.photoUrl || e?.profile_picture_url || "")
+                        : (fr?.avatar || "");
+
+                      if (!targetMoment) {
+                        targetMoment = {
+                          id: cleanUid || `reply_${Date.now()}`,
+                          momentUid: cleanUid || `reply_${Date.now()}`,
+                          canonical_uid: cleanUid || `reply_${Date.now()}`,
+                          md5: `reply_${cleanUid || Date.now()}`,
+                          authorUid: authorUid,
+                          user: {
+                            uid: authorUid,
+                            username: authorName,
+                            avatar: authorAvatar,
+                          },
+                          thumbnail_url: thumbUrl ? optimizeImageUrl(thumbUrl) : "",
+                          caption: extra.caption || (extra.text ? `Phản hồi: "${extra.text}"` : "Khoảnh khắc được phản hồi"),
+                          seconds: extra.timestamp || Date.now(),
+                        };
+                      } else {
+                        targetMoment.user = {
+                          uid: targetMoment.authorUid || authorUid,
+                          username: isMe ? (e?.displayName || e?.username || "Tôi") : (fr?.displayName || fr?.username || targetMoment.user?.username || "Bạn bè"),
+                          avatar: isMe ? (e?.photoUrl || e?.profile_picture_url || "") : (fr?.avatar || targetMoment.user?.avatar || ""),
+                        };
+                        if (extra.caption && !targetMoment.caption) {
+                          targetMoment.caption = extra.caption;
+                        }
+                      }
+
+                      // 3. Immediately show in lightbox
+                      sm(targetMoment);
+
+                      // 4. Save to storage & prepend to feed
+                      chrome.storage.local.get(["moments"], (res) => {
+                        const cur = res.moments || [];
+                        const merged = deduplicateMoments([targetMoment, ...cur], s.friends, myUid, e);
+                        chrome.storage.local.set({ moments: merged }, () => {
+                          i();
+                        });
+                      });
+
+                      b(null);
+                      v(0);
+                    },
                   }),
                 }),
                 B.jsx("section", {
                   className: oe(qa, "gallery" === u && Ka),
-                  children: B.jsx(Kr, {
-                    moments: r,
-                    onOpen: w,
-                    loadingMore: ym,
-                    reachedEnd: vm,
-                    onLoadMore: xm,
-                  }),
+                  children: ("gallery" === u || hasVisitedGallery)
+                    ? B.jsx(Kr, {
+                        moments: cleanMoments,
+                        onOpen: (idx) => {
+                          v(idx);
+                          w(idx);
+                        },
+                        loadingMore: ym,
+                        reachedEnd: vm,
+                        onLoadMore: (filter) => xm(filter),
+                        onResetReachedEnd: () => fm(!1),
+                        friends: s.friends,
+                        myUid: myUid,
+                        myUser: e,
+                        autoLoadDeepHistory: Boolean(appSettings?.autoLoadDeepHistory),
+                        onSwitchCompose: () => c("compose"),
+                        onFetchSelfMoments: async () => {
+                          fm(!1);
+                          await xm(myUid);
+                        },
+                        onFetchFriendMoments: async (frUid) => {
+                          fm(!1);
+                          await xm(frUid);
+                        },
+                        onOpenCleaner: () => setOpenDateCleaner(true),
+                      })
+                    : null,
                 }),
                 B.jsx("section", {
                   className: oe(qa, "compose" === u && Ka),
@@ -13968,15 +14849,18 @@ function Xa() {
                     user: e,
                     friends: s,
                     onShowAbout: () => f("about"),
-                    onShowChatProbe: () => f("chatProbe"),
-                    onLogout: _,
+                    onLogout: handleLogout,
+                    onOpenCleaner: () => setOpenDateCleaner(true),
                   }),
                 }),
               ],
             }),
-            null !== lm &&
-              r[lm] &&
-              B.jsx("div", {
+            (() => {
+              if (null === lm) return null;
+              const activeLightboxMoment = typeof lm === "number" ? cleanMoments[lm] : lm;
+              if (!activeLightboxMoment) return null;
+              const authorName = activeLightboxMoment.user?.username || activeLightboxMoment.user?.displayName || "Khoảnh khắc";
+              return B.jsx("div", {
                 className: "lk-lightbox",
                 role: "dialog",
                 "aria-modal": "true",
@@ -13991,8 +14875,8 @@ function Xa() {
                       children: [
                         B.jsxs("div", {
                           children: [
-                            B.jsx("strong", { children: r[lm].user.username }),
-                            B.jsx("span", { children: $e(r[lm].seconds || 0) }),
+                            B.jsx("strong", { children: authorName }),
+                            B.jsx("span", { children: $e(activeLightboxMoment.seconds || 0) }),
                           ],
                         }),
                         B.jsx("button", {
@@ -14007,55 +14891,659 @@ function Xa() {
                     B.jsx("div", {
                       className: "lk-lightbox-photo",
                       style: {
-                        backgroundImage: `url("${r[lm].thumbnail_url}")`,
+                        backgroundImage: `url("${activeLightboxMoment.thumbnail_url}")`,
                       },
                       children:
-                        r[lm].caption &&
+                        activeLightboxMoment.caption &&
                         B.jsx("p", {
                           className: "lk-lightbox-caption",
-                          children: r[lm].caption,
+                          children: activeLightboxMoment.caption,
                         }),
                     }),
                     B.jsxs("div", {
                       className: "lk-lightbox-tools",
                       children: [
-                        B.jsx("button", {
-                          type: "button",
-                          "aria-label": "Khoảnh khắc trước",
-                          disabled: lm <= 0,
-                          onClick: () => sm((e) => Math.max(0, (e ?? 0) - 1)),
-                          children: "‹",
+                        typeof lm === "number" &&
+                          B.jsx("button", {
+                            type: "button",
+                            "aria-label": "Khoảnh khắc trước",
+                            disabled: lm <= 0,
+                            onClick: () => sm((e) => Math.max(0, (e ?? 0) - 1)),
+                            children: "‹",
+                          }),
+                        B.jsx("span", {
+                          children: typeof lm === "number"
+                            ? `${lm + 1} / ${cleanMoments.length}`
+                            : "Khoảnh khắc được phản hồi",
                         }),
-                        B.jsx("span", { children: `${lm + 1} / ${r.length}` }),
                         B.jsx("button", {
                           type: "button",
                           "aria-label": "Tải ảnh",
                           onClick: () =>
                             chrome.downloads.download({
-                              url: r[lm].thumbnail_url,
-                              filename: `loocket-${String(r[lm].user.username || "moment").replace(/[^\p{L}\p{N}._-]+/gu, "_")}-${r[lm].seconds || Date.now()}.jpg`,
+                              url: activeLightboxMoment.thumbnail_url,
+                              filename: `loocket-${String(authorName || "moment").replace(/[^\p{L}\p{N}._-]+/gu, "_")}-${activeLightboxMoment.seconds || Date.now()}.jpg`,
                               saveAs: !0,
                             }),
                           children: "Tải ảnh",
                         }),
-                        B.jsx("button", {
-                          type: "button",
-                          "aria-label": "Khoảnh khắc sau",
-                          disabled: lm >= r.length - 1,
-                          onClick: () =>
-                            sm((e) => Math.min(r.length - 1, (e ?? 0) + 1)),
-                          children: "›",
-                        }),
+                        typeof lm === "number" &&
+                          B.jsx("button", {
+                            type: "button",
+                            "aria-label": "Khoảnh khắc sau",
+                            disabled: lm >= cleanMoments.length - 1,
+                            onClick: () =>
+                              sm((e) => Math.min(cleanMoments.length - 1, (e ?? 0) + 1)),
+                            children: "›",
+                          }),
                       ],
                     }),
-                    B.jsx(Mn, { moment: r[lm] }),
+                    B.jsx(Mn, { moment: activeLightboxMoment }),
                   ],
                 }),
-              }),
-            B.jsx(mn, { active: u, onChange: S, unread: "feed" === u ? 0 : o }),
+              });
+            })(),
+            B.jsx(mn, { active: u, onChange: handleTabChange, unread: "feed" === u ? 0 : o, unreadChat: "chat" === u ? 0 : chatUnreadCount }),
+            B.jsx(DateRangeCleanerModal, {
+              isOpen: openDateCleaner,
+              onClose: () => setOpenDateCleaner(false),
+              moments: cleanMoments,
+              friends: s.friends,
+              myUid: myUid,
+              myUser: e,
+            }),
           ],
         });
 }
+
+function filterMomentsByDateRange(moments, { startDate = "", endDate = "", senderFilter = "all", myUid = null } = {}) {
+  let startMs = 0;
+  let endMs = Infinity;
+
+  if (startDate) {
+    const s = new Date(`${startDate}T00:00:00`);
+    if (!isNaN(s.getTime())) startMs = s.getTime();
+  }
+  if (endDate) {
+    const e = new Date(`${endDate}T23:59:59.999`);
+    if (!isNaN(e.getTime())) endMs = e.getTime();
+  }
+
+  if (startMs > endMs) return [];
+
+  return (moments || []).filter((m) => {
+    if (!m) return false;
+    let rawSec = m.seconds ?? m.timestamp ?? m.createdAt ?? 0;
+    if (typeof rawSec === "object" && rawSec !== null) {
+      rawSec = rawSec.seconds ?? rawSec._seconds ?? 0;
+    }
+    if (typeof rawSec === "string") {
+      const parsedNum = Number(rawSec);
+      if (!isNaN(parsedNum)) {
+        rawSec = parsedNum;
+      } else {
+        const parsedDate = Date.parse(rawSec);
+        if (!isNaN(parsedDate)) rawSec = parsedDate / 1000;
+      }
+    }
+    const tMs = typeof rawSec === "number" && !isNaN(rawSec)
+      ? (rawSec > 1e11 ? rawSec : rawSec * 1000)
+      : NaN;
+
+    if (isNaN(tMs)) {
+      if (startDate || endDate) return false;
+    } else {
+      if (tMs < startMs || tMs > endMs) return false;
+    }
+
+    const authorId = m.authorUid || (typeof m.user === "string" ? (m.user.includes("/") ? m.user.split("/").pop() : m.user) : m.user?.uid);
+    if (senderFilter === "me") {
+      return authorId === myUid || m.authorUid === myUid || (typeof m.user === "string" && m.user === myUid);
+    }
+    if (senderFilter !== "all") {
+      return authorId === senderFilter || m.authorUid === senderFilter || (typeof m.user === "string" && m.user === senderFilter);
+    }
+    return true;
+  });
+}
+
+function executeDeleteMomentsByKeys(allMoments, keysToDelete) {
+  const deleteSet = keysToDelete instanceof Set ? keysToDelete : new Set(keysToDelete);
+  return (allMoments || []).filter((m) => {
+    if (!m) return false;
+    const key = m.id || m.momentUid || m.canonical_uid;
+    if (deleteSet.has(key)) return false;
+    if (m.id && deleteSet.has(m.id)) return false;
+    if (m.momentUid && deleteSet.has(m.momentUid)) return false;
+    if (m.canonical_uid && deleteSet.has(m.canonical_uid)) return false;
+    if (m.md5 && deleteSet.has(m.md5)) return false;
+    const imgKey = typeof getImageKey === "function" ? getImageKey(m.thumbnail_url) : null;
+    if (imgKey && deleteSet.has(imgKey)) return false;
+    return true;
+  });
+}
+
+function DateRangeCleanerModal({
+  isOpen,
+  onClose,
+  moments = [],
+  friends = [],
+  myUid = null,
+  myUser = null,
+  onDeleted = null,
+}) {
+  if (!isOpen) return null;
+
+  const [senderFilter, setSenderFilter] = A.useState("all");
+  const [startDate, setStartDate] = A.useState("");
+  const [endDate, setEndDate] = A.useState("");
+  const [selectedIds, setSelectedIds] = A.useState(new Set());
+  const [confirmStep, setConfirmStep] = A.useState(false);
+  const [statusMsg, setStatusMsg] = A.useState("");
+  const [isDeleting, setIsDeleting] = A.useState(false);
+  const [showAllPreview, setShowAllPreview] = A.useState(false);
+
+  const applyPreset = (preset) => {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const toYMD = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+    if (preset === "all") {
+      setStartDate("");
+      setEndDate("");
+    } else if (preset === "7d") {
+      const past = new Date(now.getTime() - 7 * 86400000);
+      setStartDate(toYMD(past));
+      setEndDate(toYMD(now));
+    } else if (preset === "30d") {
+      const past = new Date(now.getTime() - 30 * 86400000);
+      setStartDate(toYMD(past));
+      setEndDate(toYMD(now));
+    } else if (preset === "90d") {
+      const past = new Date(now.getTime() - 90 * 86400000);
+      setStartDate(toYMD(past));
+      setEndDate(toYMD(now));
+    } else if (preset === "thisYear") {
+      const start = new Date(now.getFullYear(), 0, 1);
+      setStartDate(toYMD(start));
+      setEndDate(toYMD(now));
+    } else if (preset === "lastYear") {
+      const start = new Date(now.getFullYear() - 1, 0, 1);
+      const end = new Date(now.getFullYear() - 1, 11, 31);
+      setStartDate(toYMD(start));
+      setEndDate(toYMD(end));
+    }
+  };
+
+  const matchingMoments = A.useMemo(() => {
+    return filterMomentsByDateRange(moments, { startDate, endDate, senderFilter, myUid });
+  }, [moments, startDate, endDate, senderFilter, myUid]);
+
+  A.useEffect(() => {
+    const s = new Set();
+    matchingMoments.forEach((m) => {
+      const key = m.id || m.momentUid || m.canonical_uid;
+      if (key) s.add(key);
+    });
+    setSelectedIds(s);
+    setConfirmStep(false);
+  }, [startDate, endDate, senderFilter, myUid]);
+
+  const toggleSelect = (key) => {
+    setConfirmStep(false);
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setConfirmStep(false);
+    if (selectedIds.size === matchingMoments.length) {
+      setSelectedIds(new Set());
+    } else {
+      const all = new Set();
+      matchingMoments.forEach((m) => {
+        const key = m.id || m.momentUid || m.canonical_uid;
+        if (key) all.add(key);
+      });
+      setSelectedIds(all);
+    }
+  };
+
+  const handleDelete = () => {
+    if (selectedIds.size === 0 || isDeleting) return;
+    setIsDeleting(true);
+    const countToDelete = selectedIds.size;
+
+    chrome.storage.local.get(["moments", "deletedMomentIds"], (res) => {
+      const cur = res.moments || [];
+      const prevDeleted = Array.isArray(res.deletedMomentIds) ? res.deletedMomentIds : [];
+      const updatedDeletedSet = new Set(prevDeleted);
+
+      for (const id of selectedIds) {
+        updatedDeletedSet.add(id);
+      }
+      for (const m of matchingMoments) {
+        const key = m.id || m.momentUid || m.canonical_uid;
+        if (selectedIds.has(key)) {
+          if (m.id) updatedDeletedSet.add(m.id);
+          if (m.momentUid) updatedDeletedSet.add(m.momentUid);
+          if (m.canonical_uid) updatedDeletedSet.add(m.canonical_uid);
+          if (m.md5) updatedDeletedSet.add(m.md5);
+          const imgKey = typeof getImageKey === "function" ? getImageKey(m.thumbnail_url) : null;
+          if (imgKey) updatedDeletedSet.add(imgKey);
+        }
+      }
+
+      const remaining = executeDeleteMomentsByKeys(cur, updatedDeletedSet);
+
+      chrome.storage.local.set({
+        moments: remaining,
+        deletedMomentIds: Array.from(updatedDeletedSet),
+      }, () => {
+        setIsDeleting(false);
+        setStatusMsg(`Đã xoá thành công ${countToDelete} khoảnh khắc!`);
+        setConfirmStep(false);
+        try {
+          chrome.runtime.sendMessage({ type: "momentsUpdated", hasNew: false });
+        } catch (e) {}
+        if (typeof onDeleted === "function") onDeleted(countToDelete);
+        setTimeout(() => {
+          setStatusMsg("");
+          onClose();
+        }, 1200);
+      });
+    });
+  };
+
+  return B.jsx("div", {
+    className: "lk-date-cleaner-modal-overlay",
+    onClick: onClose,
+    children: B.jsxs("div", {
+      className: "lk-date-cleaner-card",
+      onClick: (e) => e.stopPropagation(),
+      children: [
+        B.jsxs("div", {
+          className: "lk-date-cleaner-header",
+          children: [
+            B.jsxs("div", {
+              className: "lk-date-cleaner-title",
+              children: [
+                B.jsx("svg", {
+                  className: "lk-ios-icon",
+                  width: "18",
+                  height: "18",
+                  viewBox: "0 0 24 24",
+                  fill: "none",
+                  stroke: "#ffd700",
+                  strokeWidth: "2",
+                  strokeLinecap: "round",
+                  strokeLinejoin: "round",
+                  children: [
+                    B.jsx("rect", { x: "3", y: "4", width: "18", height: "18", rx: "4", ry: "4" }),
+                    B.jsx("line", { x1: "16", y1: "2", x2: "16", y2: "6" }),
+                    B.jsx("line", { x1: "8", y1: "2", x2: "8", y2: "6" }),
+                    B.jsx("line", { x1: "3", y1: "10", x2: "21", y2: "10" }),
+                  ],
+                }),
+                B.jsx("span", { children: "Xóa ảnh theo khoảng thời gian" }),
+              ],
+            }),
+            B.jsx("button", {
+              type: "button",
+              className: "lk-date-cleaner-close",
+              onClick: onClose,
+              "aria-label": "Đóng",
+              children: B.jsx("svg", {
+                width: "14",
+                height: "14",
+                viewBox: "0 0 24 24",
+                fill: "none",
+                stroke: "currentColor",
+                strokeWidth: "2.2",
+                strokeLinecap: "round",
+                strokeLinejoin: "round",
+                children: [
+                  B.jsx("line", { x1: "18", y1: "6", x2: "6", y2: "18" }),
+                  B.jsx("line", { x1: "6", y1: "6", x2: "18", y2: "18" }),
+                ],
+              }),
+            }),
+          ],
+        }),
+        B.jsxs("div", {
+          className: "lk-date-cleaner-body",
+          children: [
+            statusMsg
+              ? B.jsx("div", {
+                  className: "lk-cleaner-status-success",
+                  children: statusMsg,
+                })
+              : null,
+
+            B.jsxs("div", {
+              className: "lk-cleaner-field-group",
+              children: [
+                B.jsx("label", {
+                  className: "lk-cleaner-label",
+                  children: "Người đăng / Đối tượng lọc:",
+                }),
+                B.jsxs("select", {
+                  className: "lk-cleaner-select",
+                  value: senderFilter,
+                  onChange: (e) => setSenderFilter(e.target.value),
+                  children: [
+                    B.jsx("option", {
+                      value: "all",
+                      children: "Tất cả mọi người (Bản thân & Bạn bè)",
+                    }),
+                    B.jsx("option", {
+                      value: "me",
+                      children: "Chỉ ảnh của tôi",
+                    }),
+                    (friends || []).map((fr) =>
+                      B.jsx(
+                        "option",
+                        {
+                          value: fr.uid,
+                          children: `Bạn bè: ${fr.displayName || fr.username || fr.uid}${fr.username ? ` (@${fr.username})` : ""}`,
+                        },
+                        fr.uid,
+                      ),
+                    ),
+                  ],
+                }),
+              ],
+            }),
+
+            B.jsxs("div", {
+              className: "lk-cleaner-field-group",
+              children: [
+                B.jsx("label", {
+                  className: "lk-cleaner-label",
+                  children: "Chọn nhanh mốc thời gian:",
+                }),
+                B.jsxs("div", {
+                  className: "lk-cleaner-presets",
+                  children: [
+                    B.jsx("button", {
+                      type: "button",
+                      className: "lk-cleaner-preset-btn",
+                      onClick: () => applyPreset("7d"),
+                      children: "7 ngày qua",
+                    }),
+                    B.jsx("button", {
+                      type: "button",
+                      className: "lk-cleaner-preset-btn",
+                      onClick: () => applyPreset("30d"),
+                      children: "30 ngày qua",
+                    }),
+                    B.jsx("button", {
+                      type: "button",
+                      className: "lk-cleaner-preset-btn",
+                      onClick: () => applyPreset("90d"),
+                      children: "3 tháng qua",
+                    }),
+                    B.jsx("button", {
+                      type: "button",
+                      className: "lk-cleaner-preset-btn",
+                      onClick: () => applyPreset("thisYear"),
+                      children: "Năm nay",
+                    }),
+                    B.jsx("button", {
+                      type: "button",
+                      className: "lk-cleaner-preset-btn",
+                      onClick: () => applyPreset("all"),
+                      children: "Toàn bộ",
+                    }),
+                  ],
+                }),
+              ],
+            }),
+
+            B.jsxs("div", {
+              className: "lk-cleaner-date-row",
+              children: [
+                B.jsxs("div", {
+                  className: "lk-cleaner-field-group",
+                  style: { flex: 1 },
+                  children: [
+                    B.jsx("label", {
+                      className: "lk-cleaner-label",
+                      children: "Từ ngày:",
+                    }),
+                    B.jsx("input", {
+                      type: "date",
+                      className: "lk-cleaner-input",
+                      value: startDate,
+                      onChange: (e) => setStartDate(e.target.value),
+                    }),
+                  ],
+                }),
+                B.jsxs("div", {
+                  className: "lk-cleaner-field-group",
+                  style: { flex: 1 },
+                  children: [
+                    B.jsx("label", {
+                      className: "lk-cleaner-label",
+                      children: "Đến ngày:",
+                    }),
+                    B.jsx("input", {
+                      type: "date",
+                      className: "lk-cleaner-input",
+                      value: endDate,
+                      onChange: (e) => setEndDate(e.target.value),
+                    }),
+                  ],
+                }),
+              ],
+            }),
+
+            startDate && endDate && startDate > endDate &&
+              B.jsxs("div", {
+                className: "lk-cleaner-range-warn",
+                children: [
+                  B.jsx("svg", {
+                    width: "15",
+                    height: "15",
+                    viewBox: "0 0 24 24",
+                    fill: "none",
+                    stroke: "currentColor",
+                    strokeWidth: "2",
+                    strokeLinecap: "round",
+                    strokeLinejoin: "round",
+                    style: { flex: "none", marginRight: "6px" },
+                    children: [
+                      B.jsx("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }),
+                      B.jsx("line", { x1: "12", y1: "9", x2: "12", y2: "13" }),
+                      B.jsx("line", { x1: "12", y1: "17", x2: "12.01", y2: "17" }),
+                    ],
+                  }),
+                  B.jsx("span", { children: "Ngày bắt đầu đang lớn hơn ngày kết thúc. Vui lòng chọn lại khoảng thời gian." }),
+                ],
+              }),
+
+            B.jsxs("div", {
+              className: "lk-cleaner-results-bar",
+              children: [
+                B.jsxs("span", {
+                  children: [
+                    "Tìm thấy ",
+                    B.jsx("strong", { children: matchingMoments.length }),
+                    " khoảnh khắc (",
+                    selectedIds.size,
+                    " đã chọn)",
+                  ],
+                }),
+                matchingMoments.length > 0 &&
+                  B.jsx("button", {
+                    type: "button",
+                    className: "lk-cleaner-select-all-btn",
+                    onClick: toggleSelectAll,
+                    children:
+                      selectedIds.size === matchingMoments.length
+                        ? "Bỏ chọn tất cả"
+                        : "Chọn tất cả",
+                  }),
+              ],
+            }),
+
+            matchingMoments.length > 0
+              ? B.jsxs("div", {
+                  style: { display: "flex", flexDirection: "column", gap: "6px" },
+                  children: [
+                    B.jsx("div", {
+                      className: "lk-cleaner-preview-grid",
+                      children: (showAllPreview ? matchingMoments : matchingMoments.slice(0, 36)).map((m) => {
+                        const key = m.id || m.momentUid || m.canonical_uid;
+                        const isSel = selectedIds.has(key);
+                        const rawSec = m.seconds || m.timestamp || 0;
+                        const d = new Date(rawSec > 1e11 ? rawSec : rawSec * 1000);
+                        const dStr = !isNaN(d.getTime())
+                          ? `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`
+                          : "";
+                        return B.jsxs(
+                          "div",
+                          {
+                            className: `lk-cleaner-thumb-card ${isSel ? "selected" : ""}`,
+                            onClick: () => toggleSelect(key),
+                            children: [
+                              B.jsx("img", {
+                                className: "lk-cleaner-thumb-img",
+                                src: m.thumbnail_url || "",
+                                alt: "",
+                                loading: "lazy",
+                              }),
+                              isSel &&
+                                B.jsx("span", {
+                                  className: "lk-cleaner-thumb-check",
+                                  children: B.jsx("svg", {
+                                    width: "11",
+                                    height: "11",
+                                    viewBox: "0 0 24 24",
+                                    fill: "none",
+                                    stroke: "#ffffff",
+                                    strokeWidth: "3",
+                                    strokeLinecap: "round",
+                                    strokeLinejoin: "round",
+                                    children: B.jsx("polyline", { points: "20 6 9 17 4 12" }),
+                                  }),
+                                }),
+                              dStr &&
+                                B.jsx("span", {
+                                  className: "lk-cleaner-thumb-date",
+                                  children: dStr,
+                                }),
+                            ],
+                          },
+                          key,
+                        );
+                      }),
+                    }),
+                    matchingMoments.length > 36 &&
+                      B.jsxs("div", {
+                        className: "lk-cleaner-preview-more-row",
+                        children: [
+                          B.jsxs("span", {
+                            className: "lk-cleaner-preview-count-hint",
+                            children: [
+                              showAllPreview ? "Đang hiển thị toàn bộ " : "Đang hiển thị 36 trên ",
+                              matchingMoments.length,
+                              " ảnh",
+                            ],
+                          }),
+                          B.jsx("button", {
+                            type: "button",
+                            className: "lk-cleaner-preview-toggle-btn",
+                            onClick: () => setShowAllPreview(!showAllPreview),
+                            children: showAllPreview ? "Thu gọn preview" : `Xem thêm (${matchingMoments.length - 36} ảnh)`,
+                          }),
+                        ],
+                      }),
+                  ],
+                })
+              : B.jsx("div", {
+                  className: "lk-cleaner-empty",
+                  children: "Không có khoảnh khắc nào phù hợp với bộ lọc.",
+                }),
+
+            confirmStep &&
+              B.jsxs("div", {
+                className: "lk-cleaner-confirm-box",
+                children: [
+                  B.jsxs("div", {
+                    style: { fontWeight: 700, marginBottom: "4px", display: "flex", alignItems: "center", gap: "6px" },
+                    children: [
+                      B.jsx("svg", {
+                        width: "15",
+                        height: "15",
+                        viewBox: "0 0 24 24",
+                        fill: "none",
+                        stroke: "#e05a5a",
+                        strokeWidth: "2",
+                        strokeLinecap: "round",
+                        strokeLinejoin: "round",
+                        children: [
+                          B.jsx("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }),
+                          B.jsx("line", { x1: "12", y1: "9", x2: "12", y2: "13" }),
+                          B.jsx("line", { x1: "12", y1: "17", x2: "12.01", y2: "17" }),
+                        ],
+                      }),
+                      B.jsxs("span", {
+                        children: [
+                          "Cảnh báo xoá ",
+                          selectedIds.size,
+                          " khoảnh khắc",
+                        ],
+                      }),
+                    ],
+                  }),
+                  B.jsx("p", {
+                    style: { margin: 0 },
+                    children:
+                      "Bạn có chắc chắn muốn xoá vĩnh viễn các ảnh đã chọn không? Ảnh sẽ bị gỡ khỏi máy tính này và không thể phục hồi.",
+                  }),
+                ],
+              }),
+          ],
+        }),
+        B.jsxs("div", {
+          className: "lk-date-cleaner-footer",
+          children: [
+            B.jsx("button", {
+              type: "button",
+              className: "lk-cleaner-btn-cancel",
+              onClick: () => (confirmStep ? setConfirmStep(false) : onClose()),
+              disabled: isDeleting,
+              children: confirmStep ? "Quay lại" : "Đóng",
+            }),
+            confirmStep
+              ? B.jsx("button", {
+                  type: "button",
+                  className: "lk-cleaner-btn-danger",
+                  onClick: handleDelete,
+                  disabled: isDeleting,
+                  children: isDeleting
+                    ? "Đang xoá…"
+                    : `Xác nhận xoá (${selectedIds.size} ảnh)`,
+                })
+              : B.jsx("button", {
+                  type: "button",
+                  className: "lk-cleaner-btn-danger",
+                  onClick: () => setConfirmStep(true),
+                  disabled: selectedIds.size === 0 || isDeleting,
+                  children: `Xoá ${selectedIds.size} khoảnh khắc`,
+                }),
+          ],
+        }),
+      ],
+    }),
+  });
+}
+
 function Ga() {
   const [e, t] = A.useState(!1),
     [n, r] = A.useState(!0),
@@ -14123,4 +15611,4 @@ if (
     new Error("loocket must run inside a Chrome extension context")
   );
 ne.createRoot(Ya).render(B.jsx(A.StrictMode, { children: B.jsx(Ga, {}) }));
-export { $ as R };
+export { $ as R, DateRangeCleanerModal, filterMomentsByDateRange, executeDeleteMomentsByKeys };
