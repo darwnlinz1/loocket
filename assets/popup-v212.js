@@ -12868,16 +12868,31 @@ function Kr({
     [lkFriends, selectedFilter]
   );
 
+  const oldestMomentTimeStr = A.useMemo(() => {
+    if (!filteredMoments || filteredMoments.length === 0) return null;
+    let minSec = Infinity;
+    for (let i = 0; i < filteredMoments.length; i++) {
+      const s = filteredMoments[i]?.seconds || (filteredMoments[i]?.timestamp ? filteredMoments[i].timestamp / 1000 : 0);
+      if (s > 0 && s < minSec) minSec = s;
+    }
+    if (minSec === Infinity) return null;
+    const d = new Date(minSec > 1e11 ? minSec : minSec * 1000);
+    if (isNaN(d.getTime())) return null;
+    return `${d.getMonth() + 1}/${d.getFullYear()}`;
+  }, [filteredMoments]);
+
   const subtitleText = A.useMemo(() => {
     if (filteredMoments.length === 0) return void 0;
+    const fromStr = oldestMomentTimeStr ? ` · Từ ${oldestMomentTimeStr}` : "";
     if (selectedFilter === lkMyUid) {
-      return `${filteredMoments.length} khoảnh khắc của bạn · ${n.length} ngày`;
+      return `${filteredMoments.length} khoảnh khắc của bạn · ${n.length} ngày đã đăng${fromStr}`;
     }
     if (currentFriend) {
-      return `${filteredMoments.length} khoảnh khắc của ${currentFriend.displayName || currentFriend.username} · ${n.length} ngày`;
+      const name = currentFriend.displayName || currentFriend.username || "bạn bè";
+      return `${filteredMoments.length} khoảnh khắc của ${name} · ${n.length} ngày đã đăng${fromStr}`;
     }
-    return `${filteredMoments.length} khoảnh khắc · ${n.length} ngày`;
-  }, [filteredMoments.length, n.length, selectedFilter, lkMyUid, currentFriend]);
+    return `${filteredMoments.length} khoảnh khắc · ${n.length} ngày đã đăng${fromStr}`;
+  }, [filteredMoments.length, n.length, selectedFilter, lkMyUid, currentFriend, oldestMomentTimeStr]);
 
   return B.jsxs("div", {
     className: Ir,
