@@ -14525,6 +14525,8 @@ function Xa() {
     [g, v] = A.useState(0),
     [y, b] = A.useState(null),
     [lm, sm] = A.useState(null),
+    [singleDeleteConfirm, setSingleDeleteConfirm] = A.useState(false),
+    [isSingleDeleting, setIsSingleDeleting] = A.useState(false),
     [appSettings, setAppSettings] = A.useState(_),
     myUid = e?.localId || e?.uid || null,
     cleanMoments = A.useMemo(() => {
@@ -14540,7 +14542,52 @@ function Xa() {
     }, []),
     w = A.useCallback((e) => {
       sm(e);
-    }, []);
+    }, []),
+    handleSingleDelete = A.useCallback(async (momentToDelete) => {
+      if (!momentToDelete || isSingleDeleting) return;
+      const momentId = momentToDelete.id || momentToDelete.momentUid || momentToDelete.canonical_uid;
+      if (!momentId) return;
+
+      setIsSingleDeleting(true);
+      try {
+        await looketService.deleteMoment(momentId);
+        chrome.storage.local.get(["moments", "deletedMomentIds"], (res) => {
+          const cur = res.moments || [];
+          const prevDeleted = Array.isArray(res.deletedMomentIds) ? res.deletedMomentIds : [];
+          const updatedDeletedSet = new Set(prevDeleted);
+          updatedDeletedSet.add(momentId);
+          if (momentToDelete.id) updatedDeletedSet.add(momentToDelete.id);
+          if (momentToDelete.momentUid) updatedDeletedSet.add(momentToDelete.momentUid);
+          if (momentToDelete.canonical_uid) updatedDeletedSet.add(momentToDelete.canonical_uid);
+          if (momentToDelete.md5) updatedDeletedSet.add(momentToDelete.md5);
+          const imgKey = typeof getImageKey === "function" ? getImageKey(momentToDelete.thumbnail_url) : null;
+          if (imgKey) updatedDeletedSet.add(imgKey);
+
+          const remaining = executeDeleteMomentsByKeys(cur, updatedDeletedSet);
+          const nextDeletedIds = Array.from(updatedDeletedSet);
+
+          chrome.storage.local.set({
+            moments: remaining,
+            deletedMomentIds: nextDeletedIds
+          }, () => {
+            setDeletedMomentIds(nextDeletedIds);
+            setIsSingleDeleting(false);
+            setSingleDeleteConfirm(false);
+            sm(null);
+            try {
+              chrome.runtime.sendMessage({ type: "momentsUpdated", hasNew: false });
+            } catch (e) {}
+          });
+        });
+      } catch (err) {
+        console.error("Lỗi xóa moment:", err);
+        setIsSingleDeleting(false);
+      }
+    }, [isSingleDeleting]);
+  A.useEffect(() => {
+    setSingleDeleteConfirm(false);
+    setIsSingleDeleting(false);
+  }, [lm]);
   A.useEffect(() => {
     S().then(setAppSettings);
     chrome.storage.local.get(["deletedMomentIds"], (res) => {
@@ -14549,8 +14596,13 @@ function Xa() {
       }
     });
     const listener = (changes, area) => {
-      if (area === "local" && changes.settings && changes.settings.newValue) {
-        setAppSettings(changes.settings.newValue);
+      if (area === "local") {
+        if (changes.settings && changes.settings.newValue) {
+          setAppSettings(changes.settings.newValue);
+        }
+        if (changes.deletedMomentIds && Array.isArray(changes.deletedMomentIds.newValue)) {
+          setDeletedMomentIds(changes.deletedMomentIds.newValue);
+        }
       }
     };
     if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
@@ -15195,6 +15247,8 @@ function Xa() {
               if (null === lm) return null;
               const activeLightboxMoment = typeof lm === "number" ? cleanMoments[lm] : lm;
               if (!activeLightboxMoment) return null;
+              const myId = e?.localId || e?.uid || myUid;
+              const isMyMoment = isUserMoment(activeLightboxMoment, myId);
               const authorName = activeLightboxMoment.user?.username || activeLightboxMoment.user?.displayName || "Khoảnh khắc";
               return B.jsx("div", {
                 className: "lk-lightbox",
@@ -15263,6 +15317,15 @@ function Xa() {
                             }),
                           children: "Tải ảnh",
                         }),
+                        isMyMoment &&
+                          B.jsx("button", {
+                            type: "button",
+                            className: "lk-lightbox-btn-delete",
+                            "aria-label": "Xoá ảnh trên Locket",
+                            disabled: isSingleDeleting,
+                            onClick: () => setSingleDeleteConfirm(!singleDeleteConfirm),
+                            children: isSingleDeleting ? "Đang xoá…" : "Xoá ảnh",
+                          }),
                         typeof lm === "number" &&
                           B.jsx("button", {
                             type: "button",
@@ -15274,6 +15337,41 @@ function Xa() {
                           }),
                       ],
                     }),
+                    singleDeleteConfirm &&
+                      B.jsxs("div", {
+                        className: "lk-lightbox-delete-confirm-box",
+                        children: [
+                          B.jsx("div", {
+                            className: "lk-lightbox-delete-confirm-title",
+                            children: "⚠️ Xác nhận xoá khoảnh khắc này trên máy chủ Locket?",
+                          }),
+                          B.jsx("p", {
+                            style: { margin: "4px 0 10px", fontSize: "12px", color: "#fca5a5" },
+                            children: "Ảnh sẽ bị xoá vĩnh viễn khỏi máy chủ Locket và bạn bè sẽ không còn nhìn thấy ảnh này nữa.",
+                          }),
+                          B.jsxs("div", {
+                            style: { display: "flex", gap: "8px", justifyContent: "flex-end" },
+                            children: [
+                              B.jsx("button", {
+                                type: "button",
+                                className: "lk-cleaner-btn-cancel",
+                                style: { padding: "6px 14px", fontSize: "12px" },
+                                disabled: isSingleDeleting,
+                                onClick: () => setSingleDeleteConfirm(false),
+                                children: "Huỷ",
+                              }),
+                              B.jsx("button", {
+                                type: "button",
+                                className: "lk-cleaner-btn-danger",
+                                style: { padding: "6px 14px", fontSize: "12px", flex: "none" },
+                                disabled: isSingleDeleting,
+                                onClick: () => handleSingleDelete(activeLightboxMoment),
+                                children: isSingleDeleting ? "Đang xoá…" : "Xoá vĩnh viễn",
+                              }),
+                            ],
+                          }),
+                        ],
+                      }),
                     B.jsx(Mn, { moment: activeLightboxMoment }),
                   ],
                 }),
@@ -15292,17 +15390,44 @@ function Xa() {
         });
 }
 
+function isUserMoment(m, currentUid) {
+  if (!m || !currentUid) return false;
+  const directUid = m.authorUid || m.ownerUid || m.owner_uid || m.user_uid || m.userId;
+  if (directUid === currentUid) return true;
+  if (typeof m.user === "string") {
+    const cleanU = m.user.includes("/") ? m.user.split("/").pop() : m.user;
+    if (cleanU === currentUid) return true;
+  } else if (m.user && typeof m.user === "object") {
+    if (m.user.uid === currentUid || m.user.localId === currentUid || m.user.user_uid === currentUid) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function filterMomentsByDateRange(moments, { startDate = "", endDate = "", senderFilter = "all", myUid = null } = {}) {
   let startMs = 0;
   let endMs = Infinity;
 
   if (startDate) {
-    const s = new Date(`${startDate}T00:00:00`);
-    if (!isNaN(s.getTime())) startMs = s.getTime();
+    if (/^\d{4}-\d{2}$/.test(startDate)) {
+      const [y, m] = startDate.split("-").map(Number);
+      const s = new Date(y, m - 1, 1, 0, 0, 0, 0);
+      if (!isNaN(s.getTime())) startMs = s.getTime();
+    } else {
+      const s = new Date(`${startDate}T00:00:00`);
+      if (!isNaN(s.getTime())) startMs = s.getTime();
+    }
   }
   if (endDate) {
-    const e = new Date(`${endDate}T23:59:59.999`);
-    if (!isNaN(e.getTime())) endMs = e.getTime();
+    if (/^\d{4}-\d{2}$/.test(endDate)) {
+      const [y, m] = endDate.split("-").map(Number);
+      const e = new Date(y, m, 0, 23, 59, 59, 999);
+      if (!isNaN(e.getTime())) endMs = e.getTime();
+    } else {
+      const e = new Date(`${endDate}T23:59:59.999`);
+      if (!isNaN(e.getTime())) endMs = e.getTime();
+    }
   }
 
   if (startMs > endMs) return [];
@@ -15332,11 +15457,15 @@ function filterMomentsByDateRange(moments, { startDate = "", endDate = "", sende
       if (tMs < startMs || tMs > endMs) return false;
     }
 
-    const authorId = m.authorUid || (typeof m.user === "string" ? (m.user.includes("/") ? m.user.split("/").pop() : m.user) : m.user?.uid);
     if (senderFilter === "me") {
-      return authorId === myUid || m.authorUid === myUid || (typeof m.user === "string" && m.user === myUid);
+      if (typeof isUserMoment === "function") {
+        return isUserMoment(m, myUid);
+      }
+      const authorId = m.authorUid || (typeof m.user === "string" ? (m.user.includes("/") ? m.user.split("/").pop() : m.user) : m.user?.uid);
+      return Boolean(myUid && (authorId === myUid || m.authorUid === myUid || (typeof m.user === "string" && m.user === myUid)));
     }
     if (senderFilter !== "all") {
+      const authorId = m.authorUid || (typeof m.user === "string" ? (m.user.includes("/") ? m.user.split("/").pop() : m.user) : m.user?.uid);
       return authorId === senderFilter || m.authorUid === senderFilter || (typeof m.user === "string" && m.user === senderFilter);
     }
     return true;
@@ -15370,14 +15499,20 @@ function DateRangeCleanerModal({
 }) {
   if (!isOpen) return null;
 
-  const [senderFilter, setSenderFilter] = A.useState("all");
+  const myId = myUid || myUser?.localId || myUser?.uid || myUser?.user_uid || looketService.config.myUid;
+  const [rangeMode, setRangeMode] = A.useState("date");
   const [startDate, setStartDate] = A.useState("");
   const [endDate, setEndDate] = A.useState("");
   const [selectedIds, setSelectedIds] = A.useState(new Set());
   const [confirmStep, setConfirmStep] = A.useState(false);
   const [statusMsg, setStatusMsg] = A.useState("");
   const [isDeleting, setIsDeleting] = A.useState(false);
-  const [showAllPreview, setShowAllPreview] = A.useState(false);
+  const [deleteProgress, setDeleteProgress] = A.useState({ completed: 0, total: 0, percent: 0 });
+
+  // 1. Chỉ quét và xử lý ảnh thuộc quyền sở hữu của chính người dùng (authorUid === myId)
+  const myOnlyMoments = A.useMemo(() => {
+    return (moments || []).filter((m) => isUserMoment(m, myId));
+  }, [moments, myId]);
 
   const applyPreset = (preset) => {
     const now = new Date();
@@ -15387,23 +15522,39 @@ function DateRangeCleanerModal({
     if (preset === "all") {
       setStartDate("");
       setEndDate("");
+    } else if (preset === "thisMonth") {
+      setRangeMode("month");
+      const cur = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+      setStartDate(cur);
+      setEndDate(cur);
+    } else if (preset === "lastMonth") {
+      setRangeMode("month");
+      const prevD = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevMonth = `${prevD.getFullYear()}-${pad(prevD.getMonth() + 1)}`;
+      setStartDate(prevMonth);
+      setEndDate(prevMonth);
     } else if (preset === "7d") {
+      setRangeMode("date");
       const past = new Date(now.getTime() - 7 * 86400000);
       setStartDate(toYMD(past));
       setEndDate(toYMD(now));
     } else if (preset === "30d") {
+      setRangeMode("date");
       const past = new Date(now.getTime() - 30 * 86400000);
       setStartDate(toYMD(past));
       setEndDate(toYMD(now));
     } else if (preset === "90d") {
+      setRangeMode("date");
       const past = new Date(now.getTime() - 90 * 86400000);
       setStartDate(toYMD(past));
       setEndDate(toYMD(now));
     } else if (preset === "thisYear") {
+      setRangeMode("date");
       const start = new Date(now.getFullYear(), 0, 1);
       setStartDate(toYMD(start));
       setEndDate(toYMD(now));
     } else if (preset === "lastYear") {
+      setRangeMode("date");
       const start = new Date(now.getFullYear() - 1, 0, 1);
       const end = new Date(now.getFullYear() - 1, 11, 31);
       setStartDate(toYMD(start));
@@ -15412,8 +15563,8 @@ function DateRangeCleanerModal({
   };
 
   const matchingMoments = A.useMemo(() => {
-    return filterMomentsByDateRange(moments, { startDate, endDate, senderFilter, myUid });
-  }, [moments, startDate, endDate, senderFilter, myUid]);
+    return filterMomentsByDateRange(myOnlyMoments, { startDate, endDate, senderFilter: "me", myUid: myId });
+  }, [myOnlyMoments, startDate, endDate, myId]);
 
   A.useEffect(() => {
     const s = new Set();
@@ -15423,7 +15574,7 @@ function DateRangeCleanerModal({
     });
     setSelectedIds(s);
     setConfirmStep(false);
-  }, [startDate, endDate, senderFilter, myUid]);
+  }, [matchingMoments]);
 
   const toggleSelect = (key) => {
     setConfirmStep(false);
@@ -15449,50 +15600,77 @@ function DateRangeCleanerModal({
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (selectedIds.size === 0 || isDeleting) return;
     setIsDeleting(true);
-    const countToDelete = selectedIds.size;
+    setDeleteProgress({ completed: 0, total: selectedIds.size, percent: 0 });
+    const targetIds = Array.from(selectedIds);
 
-    chrome.storage.local.get(["moments", "deletedMomentIds"], (res) => {
-      const cur = res.moments || [];
-      const prevDeleted = Array.isArray(res.deletedMomentIds) ? res.deletedMomentIds : [];
-      const updatedDeletedSet = new Set(prevDeleted);
+    try {
+      // 1. Thực hiện gọi API xóa ảnh thực sự lên server Locket qua LooketService
+      const { deletedIds = [], failedIds = [] } = await looketService.deleteMoments(
+        targetIds,
+        (p) => setDeleteProgress(p),
+        5
+      );
 
-      for (const id of selectedIds) {
-        updatedDeletedSet.add(id);
-      }
-      for (const m of matchingMoments) {
-        const key = m.id || m.momentUid || m.canonical_uid;
-        if (selectedIds.has(key)) {
-          if (m.id) updatedDeletedSet.add(m.id);
-          if (m.momentUid) updatedDeletedSet.add(m.momentUid);
-          if (m.canonical_uid) updatedDeletedSet.add(m.canonical_uid);
-          if (m.md5) updatedDeletedSet.add(m.md5);
-          const imgKey = typeof getImageKey === "function" ? getImageKey(m.thumbnail_url) : null;
-          if (imgKey) updatedDeletedSet.add(imgKey);
-        }
-      }
-
-      const remaining = executeDeleteMomentsByKeys(cur, updatedDeletedSet);
-
-      chrome.storage.local.set({
-        moments: remaining,
-        deletedMomentIds: Array.from(updatedDeletedSet),
-      }, () => {
+      if (deletedIds.length === 0 && failedIds.length > 0) {
         setIsDeleting(false);
-        setStatusMsg(`Đã xoá thành công ${countToDelete} khoảnh khắc!`);
-        setConfirmStep(false);
-        try {
-          chrome.runtime.sendMessage({ type: "momentsUpdated", hasNew: false });
-        } catch (e) {}
-        if (typeof onDeleted === "function") onDeleted(countToDelete);
-        setTimeout(() => {
-          setStatusMsg("");
-          onClose();
-        }, 1200);
+        setStatusMsg("Xoá thất bại! Máy chủ Locket từ chối yêu cầu (vui lòng kiểm tra lại quyền hoặc token).");
+        return;
+      }
+
+      // 2. Cập nhật state local và storage CHỈ KHI server xác nhận thành công
+      const successfulDeleteSet = new Set(deletedIds);
+
+      chrome.storage.local.get(["moments", "deletedMomentIds"], (res) => {
+        const cur = res.moments || [];
+        const prevDeleted = Array.isArray(res.deletedMomentIds) ? res.deletedMomentIds : [];
+        const updatedDeletedSet = new Set(prevDeleted);
+
+        for (const id of deletedIds) {
+          updatedDeletedSet.add(id);
+        }
+        for (const m of matchingMoments) {
+          const key = m.id || m.momentUid || m.canonical_uid;
+          if (successfulDeleteSet.has(key) || (m.id && successfulDeleteSet.has(m.id)) || (m.momentUid && successfulDeleteSet.has(m.momentUid)) || (m.canonical_uid && successfulDeleteSet.has(m.canonical_uid))) {
+            if (m.id) updatedDeletedSet.add(m.id);
+            if (m.momentUid) updatedDeletedSet.add(m.momentUid);
+            if (m.canonical_uid) updatedDeletedSet.add(m.canonical_uid);
+            if (m.md5) updatedDeletedSet.add(m.md5);
+            const imgKey = typeof getImageKey === "function" ? getImageKey(m.thumbnail_url) : null;
+            if (imgKey) updatedDeletedSet.add(imgKey);
+          }
+        }
+
+        const remaining = executeDeleteMomentsByKeys(cur, updatedDeletedSet);
+
+        chrome.storage.local.set({
+          moments: remaining,
+          deletedMomentIds: Array.from(updatedDeletedSet),
+        }, () => {
+          setIsDeleting(false);
+          if (failedIds.length > 0) {
+            setStatusMsg(`Đã xoá ${deletedIds.length} ảnh trên Locket (${failedIds.length} ảnh thất bại).`);
+          } else {
+            setStatusMsg(`Đã xoá thành công ${deletedIds.length} khoảnh khắc trên server Locket!`);
+          }
+          setConfirmStep(false);
+          try {
+            chrome.runtime.sendMessage({ type: "momentsUpdated", hasNew: false });
+          } catch (e) {}
+          if (typeof onDeleted === "function") onDeleted(deletedIds.length, deletedIds);
+          setTimeout(() => {
+            setStatusMsg("");
+            onClose();
+          }, 1400);
+        });
       });
-    });
+    } catch (err) {
+      console.error("Lỗi xoá moments trên server:", err);
+      setIsDeleting(false);
+      setStatusMsg("Có lỗi xảy ra khi xoá ảnh trên máy chủ Locket.");
+    }
   };
 
   return B.jsx("div", {
@@ -15563,36 +15741,60 @@ function DateRangeCleanerModal({
                 })
               : null,
 
-            B.jsxs("div", {
-              className: "lk-cleaner-field-group",
-              children: [
-                B.jsx("label", {
-                  className: "lk-cleaner-label",
-                  children: "Người đăng / Đối tượng lọc:",
-                }),
-                B.jsxs("select", {
-                  className: "lk-cleaner-select",
-                  value: senderFilter,
-                  onChange: (e) => setSenderFilter(e.target.value),
+            isDeleting
+              ? B.jsxs("div", {
+                  className: "lk-cleaner-progress-container",
                   children: [
-                    B.jsx("option", {
-                      value: "all",
-                      children: "Tất cả mọi người (Bản thân & Bạn bè)",
+                    B.jsxs("div", {
+                      className: "lk-cleaner-progress-header",
+                      children: [
+                        B.jsxs("span", {
+                          children: [
+                            "Đang xoá trên server Locket: ",
+                            deleteProgress.completed,
+                            " / ",
+                            deleteProgress.total,
+                            " ảnh",
+                          ],
+                        }),
+                        B.jsxs("span", {
+                          children: [deleteProgress.percent, "%"],
+                        }),
+                      ],
                     }),
-                    B.jsx("option", {
-                      value: "me",
-                      children: "Chỉ ảnh của tôi",
+                    B.jsx("div", {
+                      className: "lk-cleaner-progress-track",
+                      children: B.jsx("div", {
+                        className: "lk-cleaner-progress-fill",
+                        style: { width: `${deleteProgress.percent}%` },
+                      }),
                     }),
-                    (friends || []).map((fr) =>
-                      B.jsx(
-                        "option",
-                        {
-                          value: fr.uid,
-                          children: `Bạn bè: ${fr.displayName || fr.username || fr.uid}${fr.username ? ` (@${fr.username})` : ""}`,
-                        },
-                        fr.uid,
-                      ),
-                    ),
+                  ],
+                })
+              : null,
+
+            B.jsxs("div", {
+              className: "lk-cleaner-scope-pill",
+              children: [
+                B.jsx("svg", {
+                  width: "15",
+                  height: "15",
+                  viewBox: "0 0 24 24",
+                  fill: "none",
+                  stroke: "currentColor",
+                  strokeWidth: "2",
+                  strokeLinecap: "round",
+                  strokeLinejoin: "round",
+                  children: [
+                    B.jsx("rect", { x: "3", y: "11", width: "18", height: "11", rx: "2", ry: "2" }),
+                    B.jsx("path", { d: "M7 11V7a5 5 0 0 1 10 0v4" }),
+                  ],
+                }),
+                B.jsxs("span", {
+                  children: [
+                    "Chỉ quét và xoá ảnh của bạn (",
+                    myOnlyMoments.length,
+                    " ảnh) • Tuyệt đối bảo vệ ảnh bạn bè",
                   ],
                 }),
               ],
@@ -15608,6 +15810,18 @@ function DateRangeCleanerModal({
                 B.jsxs("div", {
                   className: "lk-cleaner-presets",
                   children: [
+                    B.jsx("button", {
+                      type: "button",
+                      className: "lk-cleaner-preset-btn",
+                      onClick: () => applyPreset("thisMonth"),
+                      children: "Tháng này",
+                    }),
+                    B.jsx("button", {
+                      type: "button",
+                      className: "lk-cleaner-preset-btn",
+                      onClick: () => applyPreset("lastMonth"),
+                      children: "Tháng trước",
+                    }),
                     B.jsx("button", {
                       type: "button",
                       className: "lk-cleaner-preset-btn",
@@ -15636,7 +15850,30 @@ function DateRangeCleanerModal({
                       type: "button",
                       className: "lk-cleaner-preset-btn",
                       onClick: () => applyPreset("all"),
-                      children: "Toàn bộ",
+                      children: "Toàn bộ ảnh của tôi",
+                    }),
+                  ],
+                }),
+              ],
+            }),
+
+            B.jsxs("div", {
+              className: "lk-cleaner-field-group",
+              children: [
+                B.jsxs("div", {
+                  className: "lk-cleaner-mode-toggle",
+                  children: [
+                    B.jsx("button", {
+                      type: "button",
+                      className: `lk-cleaner-mode-btn ${rangeMode === "date" ? "active" : ""}`,
+                      onClick: () => setRangeMode("date"),
+                      children: "Chọn theo ngày",
+                    }),
+                    B.jsx("button", {
+                      type: "button",
+                      className: `lk-cleaner-mode-btn ${rangeMode === "month" ? "active" : ""}`,
+                      onClick: () => setRangeMode("month"),
+                      children: "Chọn theo tháng",
                     }),
                   ],
                 }),
@@ -15652,12 +15889,12 @@ function DateRangeCleanerModal({
                   children: [
                     B.jsx("label", {
                       className: "lk-cleaner-label",
-                      children: "Từ ngày:",
+                      children: rangeMode === "month" ? "Từ tháng:" : "Từ ngày:",
                     }),
                     B.jsx("input", {
-                      type: "date",
+                      type: rangeMode === "month" ? "month" : "date",
                       className: "lk-cleaner-input",
-                      value: startDate,
+                      value: rangeMode === "month" ? (startDate ? startDate.slice(0, 7) : "") : startDate,
                       onChange: (e) => setStartDate(e.target.value),
                     }),
                   ],
@@ -15668,12 +15905,12 @@ function DateRangeCleanerModal({
                   children: [
                     B.jsx("label", {
                       className: "lk-cleaner-label",
-                      children: "Đến ngày:",
+                      children: rangeMode === "month" ? "Đến tháng:" : "Đến ngày:",
                     }),
                     B.jsx("input", {
-                      type: "date",
+                      type: rangeMode === "month" ? "month" : "date",
                       className: "lk-cleaner-input",
-                      value: endDate,
+                      value: rangeMode === "month" ? (endDate ? endDate.slice(0, 7) : "") : endDate,
                       onChange: (e) => setEndDate(e.target.value),
                     }),
                   ],
@@ -15701,7 +15938,7 @@ function DateRangeCleanerModal({
                       B.jsx("circle", { cx: "12", cy: "17", r: "0.8", fill: "currentColor" }),
                     ],
                   }),
-                  B.jsx("span", { children: "Ngày bắt đầu đang lớn hơn ngày kết thúc. Vui lòng chọn lại khoảng thời gian." }),
+                  B.jsx("span", { children: "Ngày/tháng bắt đầu đang lớn hơn ngày/tháng kết thúc. Vui lòng chọn lại khoảng thời gian." }),
                 ],
               }),
 
@@ -15712,7 +15949,7 @@ function DateRangeCleanerModal({
                   children: [
                     "Tìm thấy ",
                     B.jsx("strong", { children: matchingMoments.length }),
-                    " khoảnh khắc (",
+                    " khoảnh khắc của bạn (",
                     selectedIds.size,
                     " đã chọn)",
                   ],
@@ -15736,7 +15973,7 @@ function DateRangeCleanerModal({
                   children: [
                     B.jsx("div", {
                       className: "lk-cleaner-preview-grid",
-                      children: (showAllPreview ? matchingMoments : matchingMoments.slice(0, 36)).map((m) => {
+                      children: matchingMoments.slice(0, 16).map((m) => {
                         const key = m.id || m.momentUid || m.canonical_uid;
                         const isSel = selectedIds.has(key);
                         const rawSec = m.seconds || m.timestamp || 0;
@@ -15752,7 +15989,7 @@ function DateRangeCleanerModal({
                             children: [
                               B.jsx("img", {
                                 className: "lk-cleaner-thumb-img",
-                                src: m.thumbnail_url || "",
+                                src: optimizeThumbnailUrl(m.thumbnail_url, 120, 60) || m.thumbnail_url || "",
                                 alt: "",
                                 loading: "lazy",
                               }),
@@ -15782,31 +16019,16 @@ function DateRangeCleanerModal({
                         );
                       }),
                     }),
-                    matchingMoments.length > 36 &&
-                      B.jsxs("div", {
-                        className: "lk-cleaner-preview-more-row",
-                        children: [
-                          B.jsxs("span", {
-                            className: "lk-cleaner-preview-count-hint",
-                            children: [
-                              showAllPreview ? "Đang hiển thị toàn bộ " : "Đang hiển thị 36 trên ",
-                              matchingMoments.length,
-                              " ảnh",
-                            ],
-                          }),
-                          B.jsx("button", {
-                            type: "button",
-                            className: "lk-cleaner-preview-toggle-btn",
-                            onClick: () => setShowAllPreview(!showAllPreview),
-                            children: showAllPreview ? "Thu gọn preview" : `Xem thêm (${matchingMoments.length - 36} ảnh)`,
-                          }),
-                        ],
+                    matchingMoments.length > 16 &&
+                      B.jsx("div", {
+                        className: "lk-cleaner-preview-hint",
+                        children: `Hiển thị 16 ảnh mẫu tiêu biểu • Toàn bộ ${matchingMoments.length} ảnh trong khoảng thời gian này sẽ được xử lý khi xóa.`,
                       }),
                   ],
                 })
               : B.jsx("div", {
                   className: "lk-cleaner-empty",
-                  children: "Không có khoảnh khắc nào phù hợp với bộ lọc.",
+                  children: "Không có khoảnh khắc nào của bạn trong khoảng thời gian này.",
                 }),
 
             confirmStep &&
@@ -15833,17 +16055,20 @@ function DateRangeCleanerModal({
                       }),
                       B.jsxs("span", {
                         children: [
-                          "Cảnh báo xoá ",
+                          "Cảnh báo xoá vĩnh viễn ",
                           selectedIds.size,
-                          " khoảnh khắc",
+                          " khoảnh khắc trên máy chủ Locket",
                         ],
                       }),
                     ],
                   }),
-                  B.jsx("p", {
+                  B.jsxs("p", {
                     style: { margin: 0 },
-                    children:
-                      "Bạn có chắc chắn muốn xoá vĩnh viễn các ảnh đã chọn không? Ảnh sẽ bị gỡ khỏi máy tính này và không thể phục hồi.",
+                    children: [
+                      "Bạn có chắc chắn muốn xoá vĩnh viễn ",
+                      B.jsx("strong", { children: `${selectedIds.size} ảnh` }),
+                      " của mình trên máy chủ Locket không? Yêu cầu xoá sẽ được gửi trực tiếp tới API Locket và cơ sở dữ liệu. Thao tác này KHÔNG THỂ HOÀN TÁC.",
+                    ],
                   }),
                 ],
               }),
@@ -16184,4 +16409,4 @@ ne.createRoot(Ya).render(
     })
   })
 );
-export { $ as R, DateRangeCleanerModal, filterMomentsByDateRange, executeDeleteMomentsByKeys };
+export { $ as R, DateRangeCleanerModal, filterMomentsByDateRange, executeDeleteMomentsByKeys, isUserMoment };

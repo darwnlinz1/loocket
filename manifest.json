@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "loocket",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "description": "Xem, đăng khoảnh khắc và trò chuyện Locket ngay trên trình duyệt máy tính.",
   "action": {
     "default_popup": "index.html",

@@ -882,6 +882,149 @@ export class LooketService {
   }
 
   /**
+   * 6. XOÁ 1 KHOẢNG KHẮC (DELETE MOMENT TRÊN BACKEND LOCKET & FIRESTORE)
+   * Gửi request lên cả Locket API Gateway (https://api.locketcamera.com/deleteMoment)
+   * và Firestore Document Deletion (databases/locket/documents/history/{myUid}/entries/{momentUid})
+   * để đảm bảo khoảnh khắc bị xoá sạch hoàn toàn khỏi máy chủ Locket.
+   * @param {string} momentUid ID của khoảnh khắc cần xoá
+   * @returns {Promise<{ success: boolean, momentUid: string }>}
+   */
+  async deleteMoment(momentUid) {
+    if (!momentUid) {
+      throw new Error('Thiếu momentUid cần xoá');
+    }
+    const cleanId = momentUid.includes('/') ? momentUid.split('/').pop() : momentUid;
+    const token = await this.getIdToken();
+    if (!this.config.myUid) {
+      await this.syncFromStorage();
+    }
+    const myUid = this.config.myUid;
+
+    let apiSuccess = false;
+    let lastError = null;
+
+    // 1. Gửi request tới Locket API Gateway Endpoint
+    try {
+      const payload = JSON.stringify({
+        data: {
+          moment_uid: cleanId,
+          moment_id: cleanId,
+          canonical_uid: cleanId
+        }
+      });
+      const res = await fetch(`${LOCKET_CONSTANTS.API_BASE_URL}/deleteMoment`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json; charset=utf-8',
+          'User-Agent': 'okhttp/4.12.0'
+        },
+        body: payload
+      });
+      if (res.ok || res.status === 200 || res.status === 204 || res.status === 404) {
+        apiSuccess = true;
+      } else {
+        lastError = new Error(`Locket API Gateway lỗi HTTP ${res.status}`);
+      }
+    } catch (err) {
+      lastError = err;
+      // Tiếp tục xoá trên Firestore
+    }
+
+    // 2. Gửi DELETE request tới Firestore (subcollection entries của user)
+    if (myUid) {
+      try {
+        const firestoreUrl = `${LOCKET_CONSTANTS.FIRESTORE_URL}/projects/${LOCKET_CONSTANTS.PROJECT_ID}/databases/locket/documents/history/${myUid}/entries/${cleanId}?key=${this.config.apiKey}`;
+        const fsRes = await fetch(firestoreUrl, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'x-goog-request-params': `projects/${LOCKET_CONSTANTS.PROJECT_ID}/databases/locket`,
+            ...ANDROID_HEADERS
+          }
+        });
+        if (fsRes.ok || fsRes.status === 200 || fsRes.status === 204 || fsRes.status === 404) {
+          apiSuccess = true;
+        } else if (!apiSuccess) {
+          lastError = new Error(`Firestore entries lỗi HTTP ${fsRes.status}`);
+        }
+      } catch (err) {
+        if (!apiSuccess) lastError = err;
+      }
+    }
+
+    // 3. Cố gắng xoá thêm document tại moments root collection (nếu có)
+    try {
+      const momentsDocUrl = `${LOCKET_CONSTANTS.FIRESTORE_URL}/projects/${LOCKET_CONSTANTS.PROJECT_ID}/databases/locket/documents/moments/${cleanId}?key=${this.config.apiKey}`;
+      const mRes = await fetch(momentsDocUrl, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-goog-request-params': `projects/${LOCKET_CONSTANTS.PROJECT_ID}/databases/locket`,
+          ...ANDROID_HEADERS
+        }
+      });
+      if (mRes && (mRes.ok || mRes.status === 200 || mRes.status === 204 || mRes.status === 404)) {
+        apiSuccess = true;
+      }
+    } catch {}
+
+    if (!apiSuccess) {
+      throw lastError || new Error(`Không thể xoá khoảnh khắc ${cleanId} trên máy chủ Locket`);
+    }
+
+    return {
+      success: true,
+      momentUid: cleanId
+    };
+  }
+
+  /**
+   * 7. XOÁ HÀNG LOẠT MOMENTS THEO DANH SÁCH (CONCURRENT POOL VỚI PROGRESS CALLBACK)
+   * Sử dụng concurrency pool đa luồng an toàn (mặc định 5 luồng) tránh rate limit server Locket
+   * @param {Array<string>} momentIds Danh sách ID cần xoá
+   * @param {Function} [onProgress] Callback tiến độ: ({ completed, total, currentId, percent }) => void
+   * @param {number} [concurrency=5]
+   * @returns {Promise<{ deletedIds: Array<string>, failedIds: Array<string> }>}
+   */
+  async deleteMoments(momentIds = [], onProgress = null, concurrency = 5) {
+    if (!Array.isArray(momentIds) || momentIds.length === 0) {
+      return { deletedIds: [], failedIds: [] };
+    }
+    const cleanIds = [...new Set(momentIds.filter(Boolean))];
+    const total = cleanIds.length;
+    let completed = 0;
+    const deletedIds = [];
+    const failedIds = [];
+
+    await runConcurrentPool(
+      cleanIds,
+      async (id) => {
+        try {
+          await this.deleteMoment(id);
+          deletedIds.push(id);
+        } catch (err) {
+          console.warn(`Lỗi khi xoá moment ${id}:`, err);
+          failedIds.push(id);
+        } finally {
+          completed++;
+          if (typeof onProgress === 'function') {
+            onProgress({
+              completed,
+              total,
+              percent: Math.round((completed / total) * 100),
+              currentId: id
+            });
+          }
+        }
+      },
+      concurrency
+    );
+
+    return { deletedIds, failedIds };
+  }
+
+  /**
    * Helper concurrency pool gắn liền với instance
    */
   async runConcurrentPool(items, fn, concurrency = 30) {
@@ -1057,4 +1200,12 @@ export class LooketService {
 
 // Global service instance
 export const looketService = new LooketService();
+
+export async function deleteMoment(momentUid) {
+  return looketService.deleteMoment(momentUid);
+}
+
+export async function deleteMoments(momentIds, onProgress, concurrency = 5) {
+  return looketService.deleteMoments(momentIds, onProgress, concurrency);
+}
 

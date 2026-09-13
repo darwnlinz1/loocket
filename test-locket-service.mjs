@@ -6,7 +6,9 @@ import {
   optimizeImageUrl,
   generateUUID,
   runConcurrentPool,
-  preloadImagesConcurrently
+  preloadImagesConcurrently,
+  deleteMoment,
+  deleteMoments
 } from './assets/locket-service.js';
 
 console.log('--- STARTING COMPREHENSIVE LOCKET SERVICE TESTS ---');
@@ -78,7 +80,7 @@ globalThis.fetch = async (url, options = {}) => {
   }
 
   // Mock Firestore Moments runQuery
-  if (url.includes('/databases/locket/documents/history/')) {
+  if (options.method === 'POST' && url.includes('/databases/locket/documents/history/')) {
     assert.strictEqual(options.headers['Authorization'], 'Bearer mock_id_token_xyz');
     assert.strictEqual(options.headers['x-android-package'], 'com.locket.Locket');
     assert.strictEqual(options.headers['x-android-cert'], '187A27D3D7364A044307F56E66230F973DCCD5B7');
@@ -206,6 +208,41 @@ globalThis.fetch = async (url, options = {}) => {
       ok: true,
       status: 200,
       json: async () => ({ status: 200 })
+    };
+  }
+
+  // Mock deleteMoment Gateway
+  if (url.includes('/deleteMoment')) {
+    assert.strictEqual(options.headers['Authorization'], 'Bearer mock_id_token_xyz');
+    assert.strictEqual(options.headers['User-Agent'], 'okhttp/4.12.0');
+    if (options.body && options.body.includes('fail_moment')) {
+      return {
+        ok: false,
+        status: 500,
+        text: async () => 'Internal Server Error'
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ result: { status: 200, success: true } })
+    };
+  }
+
+  // Mock Firestore documents DELETE
+  if (options.method === 'DELETE' && (url.includes('/databases/locket/documents/') || url.includes('/databases/(default)/documents/'))) {
+    assert.strictEqual(options.headers['Authorization'], 'Bearer mock_id_token_xyz');
+    if (url.includes('fail_moment')) {
+      return {
+        ok: false,
+        status: 500,
+        text: async () => 'Internal Server Error'
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({})
     };
   }
 
@@ -398,9 +435,43 @@ async function runTests() {
   globalThis.Image = origImage;
   console.log('✓ Stalled image safety timeout in preloadImagesConcurrently verified');
 
+  // 17. Test deleteMoment and deleteMoments API with progress reporting
+  const deleteRes = await service.deleteMoment('canonical_moment_1');
+  assert.strictEqual(deleteRes.success, true);
+  assert.strictEqual(deleteRes.momentUid, 'canonical_moment_1');
+
+  const progressUpdates = [];
+  const batchRes = await service.deleteMoments(['moment_batch_1', 'moment_batch_2'], (p) => {
+    progressUpdates.push({ ...p });
+  }, 2);
+  assert.strictEqual(batchRes.deletedIds.length, 2);
+  assert.strictEqual(progressUpdates.length, 2);
+  assert.strictEqual(progressUpdates[1].percent, 100);
+  assert.strictEqual(progressUpdates[1].completed, 2);
+
+  // Server error handling and rejection
+  await assert.rejects(async () => service.deleteMoment('fail_moment_1'), /lỗi HTTP 500/);
+
+  // Mixed batch deletion (success + fail)
+  const mixedBatchRes = await service.deleteMoments(['moment_batch_success', 'fail_moment_bad']);
+  assert.strictEqual(mixedBatchRes.deletedIds.length, 1);
+  assert.strictEqual(mixedBatchRes.failedIds.length, 1);
+  assert.strictEqual(mixedBatchRes.deletedIds[0], 'moment_batch_success');
+  assert.strictEqual(mixedBatchRes.failedIds[0], 'fail_moment_bad');
+
+  // Standalone function exports test
+  assert.strictEqual(typeof deleteMoment, 'function');
+  assert.strictEqual(typeof deleteMoments, 'function');
+
+  // Empty list and edge cases
+  const emptyRes = await service.deleteMoments([]);
+  assert.deepStrictEqual(emptyRes, { deletedIds: [], failedIds: [] });
+  await assert.rejects(async () => service.deleteMoment(''), /Thiếu momentUid/);
+  console.log('✓ Locket server deleteMoment and deleteMoments with live progress verified');
+
   // Restore fetch
   globalThis.fetch = originalFetch;
-  console.log('\nALL 16 LOCKET SERVICE UNIT & INTEGRATION TESTS PASSED PERFECTLY!\n');
+  console.log('\nALL 17 LOCKET SERVICE UNIT & INTEGRATION TESTS PASSED PERFECTLY!\n');
 }
 
 runTests().catch((err) => {

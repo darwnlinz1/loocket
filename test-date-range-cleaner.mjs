@@ -175,4 +175,85 @@ assert.ok(uiUpgradeCss.includes('.lk-gallery-filter-pill.active'), 'CSS must sty
 assert.ok(uiUpgradeCss.includes('border: 1.5px solid var(--brand-400)') || uiUpgradeCss.includes('border: 1.5px solid #f59e0b'), 'Active filter pill must have 1.5px dynamic accent border');
 console.log('✓ Locket Gold visual polish matching both screenshots verified');
 
+// -----------------------------------------------------------------------------
+// TEST 6: User-Only Photo Scope, DOM Capping & Real API Deletion in DateRangeCleanerModal
+// -----------------------------------------------------------------------------
+console.log('\nTest 6: Verifying User-Only Photo Scope, DOM Capping & Real API Deletion in DateRangeCleanerModal');
+
+// 6.1 isUserMoment helper function
+const isUserMomentMatch = popupJs.match(/function isUserMoment\([\s\S]*?\n\}/);
+assert.ok(isUserMomentMatch, 'isUserMoment must be defined in popup-v212.js');
+
+const isUserMoment = new Function(`
+  ${isUserMomentMatch[0]}
+  return isUserMoment;
+`)();
+
+assert.strictEqual(isUserMoment({ authorUid: 'my_uid' }, 'my_uid'), true, 'User moment must match my_uid');
+assert.strictEqual(isUserMoment({ authorUid: 'friend_uid' }, 'my_uid'), false, 'Friend moment must NOT match my_uid');
+assert.strictEqual(isUserMoment({ user: { uid: 'my_uid' } }, 'my_uid'), true, 'Nested user object must match');
+assert.strictEqual(isUserMoment({ user: 'users/my_uid' }, 'my_uid'), true, 'User reference string must match');
+assert.strictEqual(isUserMoment({ user: 'users/friend_uid' }, 'my_uid'), false, 'Friend reference string must NOT match');
+assert.strictEqual(isUserMoment({ authorUid: 'friend_uid' }, null), false, 'Friend moment must NOT match null currentUid');
+assert.strictEqual(isUserMoment({ authorUid: 'friend_uid' }, undefined), false, 'Friend moment must NOT match undefined currentUid');
+assert.strictEqual(isUserMoment({ authorUid: 'friend_uid' }, ''), false, 'Friend moment must NOT match empty currentUid');
+assert.strictEqual(isUserMoment(null, 'my_uid'), false, 'Null moment must return false');
+assert.strictEqual(isUserMoment({ owner_uid: 'my_uid' }, 'my_uid'), true, 'owner_uid must match');
+assert.strictEqual(isUserMoment({ user_uid: 'my_uid' }, 'my_uid'), true, 'user_uid must match');
+console.log('✓ isUserMoment correctly isolates user photos and blocks friend photos (including null safety)');
+
+// 6.1b Month Range filtering in filterMomentsByDateRange (YYYY-MM)
+const filterDateMatch = popupJs.match(/function filterMomentsByDateRange\([\s\S]*?\n\}/);
+assert.ok(filterDateMatch, 'filterMomentsByDateRange must be defined in popup-v212.js');
+const testFilterFunc = new Function(`${isUserMomentMatch[0]}; ${filterDateMatch[0]}; return filterMomentsByDateRange;`)();
+
+const testMoments = [
+  { id: 'may_15', seconds: Math.floor(new Date('2026-05-15T12:00:00Z').getTime() / 1000), authorUid: 'my_uid' },
+  { id: 'june_28', seconds: Math.floor(new Date('2026-06-28T22:00:00Z').getTime() / 1000), authorUid: 'my_uid' },
+  { id: 'july_05', seconds: Math.floor(new Date('2026-07-05T08:00:00Z').getTime() / 1000), authorUid: 'my_uid' },
+  { id: 'june_friend', seconds: Math.floor(new Date('2026-06-20T10:00:00Z').getTime() / 1000), authorUid: 'friend_uid' }
+];
+
+// Test month range: May to June 2026
+const mayToJune = testFilterFunc(testMoments, { startDate: '2026-05', endDate: '2026-06', senderFilter: 'me', myUid: 'my_uid' });
+assert.strictEqual(mayToJune.length, 2, 'May to June month range must include both May 15 and June 28 photos');
+assert.ok(mayToJune.some(m => m.id === 'may_15'));
+assert.ok(mayToJune.some(m => m.id === 'june_28'));
+assert.ok(!mayToJune.some(m => m.id === 'july_05'), 'July 05 photo must NOT be included in June end month');
+assert.ok(!mayToJune.some(m => m.id === 'june_friend'), 'Friend photo must NEVER be included in me filter');
+console.log('✓ Month range (YYYY-MM) filtering accurately covers whole end-month and isolates user photos');
+
+// 6.2 DateRangeCleanerModal only cleans user's own photos & supports month/date modes
+assert.ok(popupJs.includes('isUserMoment(m, myId)'), 'DateRangeCleanerModal must filter to only user moments');
+assert.ok(popupJs.includes('deleteProgress'), 'DateRangeCleanerModal must track deleteProgress state');
+assert.ok(popupJs.includes('looketService.deleteMoments'), 'DateRangeCleanerModal must call looketService.deleteMoments');
+assert.ok(popupJs.includes('rangeMode'), 'DateRangeCleanerModal must support rangeMode (date/month)');
+assert.ok(popupJs.includes('thisMonth'), 'DateRangeCleanerModal must support thisMonth preset');
+assert.ok(popupJs.includes('lastMonth'), 'DateRangeCleanerModal must support lastMonth preset');
+assert.ok(uiUpgradeCss.includes('.lk-cleaner-progress-container'), 'CSS must style progress bar container');
+assert.ok(uiUpgradeCss.includes('.lk-cleaner-progress-track'), 'CSS must style progress bar track');
+assert.ok(uiUpgradeCss.includes('.lk-cleaner-progress-fill'), 'CSS must style animated progress fill');
+assert.ok(uiUpgradeCss.includes('.lk-cleaner-mode-toggle'), 'CSS must style date/month mode toggle');
+assert.ok(uiUpgradeCss.includes('.lk-cleaner-mode-btn'), 'CSS must style mode toggle buttons');
+
+// 6.3 DOM Capping: Never render 3,000+ photos to DOM
+assert.ok(popupJs.includes('matchingMoments.slice(0, 16)'), 'DateRangeCleanerModal must cap preview to max 16 sample photos to prevent DOM freeze');
+assert.ok(!popupJs.includes('showAllPreview ? matchingMoments'), 'DateRangeCleanerModal must NOT render thousands of photos into DOM');
+console.log('✓ User-only scope, 16-sample DOM capping, month range modes, and real API batch deletion verified');
+
+// -----------------------------------------------------------------------------
+// TEST 7: Lightbox Single Photo Deletion & Friend Protection
+// -----------------------------------------------------------------------------
+console.log('\nTest 7: Verifying Lightbox Single Photo Deletion & Friend Protection');
+
+assert.ok(popupJs.includes('isMyMoment'), 'Lightbox must check isMyMoment before showing delete button');
+assert.ok(popupJs.includes('lk-lightbox-btn-delete'), 'Lightbox must render lk-lightbox-btn-delete button for own photos');
+assert.ok(popupJs.includes('handleSingleDelete'), 'Xa must define handleSingleDelete handler');
+assert.ok(popupJs.includes('looketService.deleteMoment'), 'handleSingleDelete must call looketService.deleteMoment');
+assert.ok(popupJs.includes('lk-lightbox-delete-confirm-box'), 'Lightbox must render confirmation dialog before deletion');
+assert.ok(uiUpgradeCss.includes('.lk-lightbox-btn-delete'), 'CSS must style lightbox delete button');
+assert.ok(uiUpgradeCss.includes('.lk-lightbox-delete-confirm-box'), 'CSS must style lightbox delete confirmation dialog');
+console.log('✓ Lightbox single photo deletion, friend protection, and confirmation verified');
+
 console.log('\n=== ALL DATE RANGE CLEANER & HORIZONTAL SCROLL TESTS PASSED 100%! ===');
+
